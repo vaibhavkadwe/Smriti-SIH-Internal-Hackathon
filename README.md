@@ -126,52 +126,6 @@ Python >= 3.10
 Firebase CLI
 ```
 
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/<your-username>/smriti.git
-cd smriti
-
-# Install Flutter app dependencies
-cd app
-flutter pub get
-
-# Install caregiver dashboard dependencies
-cd ../dashboard
-npm install
-
-# Install AI microservice dependencies
-cd ../ai-service
-pip install -r requirements.txt
-```
-
-### Running the Project
-
-```bash
-# Run the patient app
-cd app
-flutter run
-
-# Run the caregiver dashboard
-cd dashboard
-npm start
-
-# Run the AI/ML microservice
-cd ai-service
-uvicorn main:app --reload
-```
-
-### Environment Variables
-Create a `.env` file in each relevant directory with:
-```
-FIREBASE_API_KEY=your_key_here
-BHASHINI_API_KEY=your_key_here
-GOOGLE_CLOUD_API_KEY=your_key_here
-```
-
----
-
 ## 📊 Project Status
 
 - [x] Problem research and requirement analysis
@@ -196,27 +150,9 @@ GOOGLE_CLOUD_API_KEY=your_key_here
 
 ---
 
-## 👥 Team
-
-**Team Name:** *(add your team name)*
-
-| Name | Role |
-|---|---|
-| | |
-| | |
-| | |
-
----
-
 ## 🎯 Smart India Hackathon 2026
 
 This project is being developed for **Smart India Hackathon (SIH)** under the problem statement issued by the **Ministry of Development of North Eastern Region (MDoNER)**.
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
 ---
 
