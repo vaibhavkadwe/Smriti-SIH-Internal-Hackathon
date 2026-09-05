@@ -81,13 +81,15 @@ async def record_game_action(
     if not session:
         raise ValueError(f"Game session {session_id} not found")
 
-    # Update running counts
+    # Update running counts. Only resolved attempts (is_correct set) count
+    # toward attempts/accuracy; informational events (first flips, stuck
+    # telemetry) stay metric-free so they cannot deflate accuracy_pct.
     if is_correct is not None:
         if is_correct:
             session.correct_count += 1
         else:
             session.incorrect_count += 1
-    session.attempts += 1
+        session.attempts += 1
 
     # Build event record
     event = {
@@ -98,10 +100,11 @@ async def record_game_action(
         "response_time_ms": response_time_ms,
     }
 
-    # Append to raw_event_log (JSONB array)
-    if session.raw_event_log is None:
-        session.raw_event_log = []
-    session.raw_event_log.append(event)
+    # Append to raw_event_log (JSONB array). Reassign — don't mutate — so
+    # SQLAlchemy's change detection persists the new list on flush.
+    updated_log = list(session.raw_event_log or [])
+    updated_log.append(event)
+    session.raw_event_log = updated_log
 
     await db.flush()
     return event

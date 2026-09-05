@@ -45,6 +45,7 @@ NER_CONTENT_PACKS: Dict[str, ContentPack] = {
             ContentItem("wangala", "Wangala 100 Drums", "ৱাংগালা", "ওয়াঙ্গালা", "वांगला", "Meghalaya", "assets/images/match_it/festivals/wangala.png"),
             ContentItem("moatsu", "Moatsu Festival", "মোৱাতচু", "মোয়াতসু", "मोआत्सु", "Nagaland", "assets/images/match_it/festivals/moatsu.png"),
             ContentItem("dree", "Dree Festival", "ড্ৰী উৎসৱ", "ড্রী উৎসব", "द्री उत्सव", "Arunachal Pradesh", "assets/images/match_it/festivals/dree.png"),
+            ContentItem("ningol_chakouba", "Ningol Chakouba", "নিঙল চাকৌবা", "নিঙল চাকোউবা", "निंगोल चाकोउबा", "Manipur", "assets/images/match_it/festivals/ningol_chakouba.png"),
         ],
     ),
     "fruits_flora_ner": ContentPack(
@@ -62,6 +63,7 @@ NER_CONTENT_PACKS: Dict[str, ContentPack] = {
             ContentItem("starfruit", "Kordoi (Starfruit)", "কৰ্দৈ", "কামরাঙা", "कमरक", "Assam", "assets/images/match_it/fruits/starfruit.png"),
             ContentItem("tamul_pan", "Tamul-Paan (Betel Nut)", "তামোল-পাণ", "সুপারি-পান", "तामुल-पान", "All NER", "assets/images/match_it/fruits/tamul_pan.png"),
             ContentItem("kopou_phool", "Kopou Phool (Foxtail Orchid)", "কপৌ ফুল", "কপৌ ফুল", "कोपौ फूल", "Assam / Arunachal", "assets/images/match_it/fruits/kopou_phool.png"),
+            ContentItem("assam_tea_leaf", "Assam Tea Leaf", "চাহ পাত", "অসম চা পাতা", "असम चाय पत्ती", "Assam", "assets/images/match_it/fruits/assam_tea_leaf.png"),
         ],
     ),
     "heritage_household_ner": ContentPack(
@@ -79,6 +81,9 @@ NER_CONTENT_PACKS: Dict[str, ContentPack] = {
             ContentItem("pepa", "Pepa (Buffalo Horn Flute)", "পেঁপা", "পেঁপা", "पेंपा", "Assam", "assets/images/match_it/heritage/pepa.png"),
             ContentItem("mekhela_sador", "Mekhela Sador", "মেখেলা চাদৰ", "মেখেলা চাদর", "मेखेला सादोर", "Assam", "assets/images/match_it/heritage/mekhela_sador.png"),
             ContentItem("puan", "Mizo Puan (Traditional Attire)", "পুৱান", "পুয়ান", "पुआन", "Mizoram", "assets/images/match_it/heritage/puan.png"),
+            ContentItem("eri_silk", "Eri Silk (Ahimsa Silk)", "এৰি পাট", "এরি রেশম", "एरी रेशम", "Assam", "assets/images/match_it/heritage/eri_silk.png"),
+            ContentItem("bamboo_craft", "Bamboo Craft", "বাঁহৰ শিল্প", "বাঁশের হস্তশিল্প", "बांस शिल्प", "All NER", "assets/images/match_it/heritage/bamboo_craft.png"),
+            ContentItem("naga_shawl", "Naga Shawl", "নাগা চাদৰ", "নাগা শাল", "नागा शॉल", "Nagaland", "assets/images/match_it/heritage/naga_shawl.png"),
         ],
     ),
 }

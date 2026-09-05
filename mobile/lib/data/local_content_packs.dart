@@ -17,21 +17,21 @@ class LocalContentPacks {
       name: 'NER Festivals & Celebrations',
       region: 'North East India',
       description: 'Traditional festivals across the 8 northeastern states.',
-      itemCount: 9,
+      itemCount: 10,
     ),
     ContentPackSummary(
       id: 'fruits_flora_ner',
       name: 'NER Fruits & Flora',
       region: 'North East India',
       description: 'Indigenous fruits and plants familiar to NER elders.',
-      itemCount: 9,
+      itemCount: 10,
     ),
     ContentPackSummary(
       id: 'heritage_household_ner',
       name: 'Heritage & Household Objects',
       region: 'North East India',
       description: 'Everyday traditional items and symbols of the North East.',
-      itemCount: 9,
+      itemCount: 12,
     ),
   ];
 
@@ -46,6 +46,7 @@ class LocalContentPacks {
       {'id': 'wangala', 'en': 'Wangala 100 Drums', 'as': 'ৱাংগালা'},
       {'id': 'moatsu', 'en': 'Moatsu Festival', 'as': 'মোৱাতচু'},
       {'id': 'dree', 'en': 'Dree Festival', 'as': 'ড্ৰী উৎসৱ'},
+      {'id': 'ningol_chakouba', 'en': 'Ningol Chakouba', 'as': 'নিঙল চাকৌবা'},
     ],
     'fruits_flora_ner': [
       {'id': 'kaji_nemu', 'en': 'Kaji Nemu (Assam Lemon)', 'as': 'কাজী নেমু'},
@@ -57,6 +58,7 @@ class LocalContentPacks {
       {'id': 'starfruit', 'en': 'Kordoi (Starfruit)', 'as': 'কৰ্দৈ'},
       {'id': 'tamul_pan', 'en': 'Tamul-Paan', 'as': 'তামোল-পাণ'},
       {'id': 'kopou', 'en': 'Kopou Phool', 'as': 'কপৌ ফুল'},
+      {'id': 'assam_tea_leaf', 'en': 'Assam Tea Leaf', 'as': 'চাহ পাত'},
     ],
     'heritage_household_ner': [
       {'id': 'jaapi', 'en': 'Jaapi', 'as': 'জাপি'},
@@ -68,6 +70,9 @@ class LocalContentPacks {
       {'id': 'pepa', 'en': 'Pepa', 'as': 'পেঁপা'},
       {'id': 'mekhela', 'en': 'Mekhela Sador', 'as': 'মেখেলা চাদৰ'},
       {'id': 'puan', 'en': 'Mizo Puan', 'as': 'পুৱান'},
+      {'id': 'eri_silk', 'en': 'Eri Silk', 'as': 'এৰি পাট'},
+      {'id': 'bamboo_craft', 'en': 'Bamboo Craft', 'as': 'বাঁহৰ শিল্প'},
+      {'id': 'naga_shawl', 'en': 'Naga Shawl', 'as': 'নাগা চাদৰ'},
     ],
   };
 
@@ -107,10 +112,10 @@ class LocalContentPacks {
     const steps = [
       RoutineStep(stepId: 'wake', order: 1, time: '06:30', titleEn: 'Wake up', titleAs: 'শুই উঠা', icon: 'wb_sunny'),
       RoutineStep(stepId: 'brush', order: 2, time: '06:45', titleEn: 'Brush teeth', titleAs: 'দাঁত ঘঁহা', icon: 'brush'),
-      RoutineStep(stepId: 'tea', order: 3, time: '07:00', titleEn: 'Morning tea', titleAs: 'পুৱাৰ চাহ', icon: 'local_cafe'),
+      RoutineStep(stepId: 'tea', order: 3, time: '07:00', titleEn: 'Morning Bihu Tea', titleAs: 'পুৱাৰ বিহু চাহ', icon: 'local_cafe'),
       RoutineStep(stepId: 'meds', order: 4, time: '08:00', titleEn: 'Take medicine', titleAs: 'ঔষধ লোৱা', icon: 'medication'),
-      RoutineStep(stepId: 'walk', order: 5, time: '16:30', titleEn: 'Evening walk', titleAs: 'খোজ কাঢ়া', icon: 'directions_walk'),
-      RoutineStep(stepId: 'dinner', order: 6, time: '19:30', titleEn: 'Dinner', titleAs: 'ৰাতিৰ আহাৰ', icon: 'restaurant'),
+      RoutineStep(stepId: 'bath', order: 5, time: '09:30', titleEn: 'Bathing', titleAs: 'গা ধোৱা', icon: 'shower'),
+      RoutineStep(stepId: 'dress', order: 6, time: '09:45', titleEn: 'Dress in Traditional Attire', titleAs: 'পৰম্পৰাগত পোছাক', icon: 'checkroom'),
     ];
     final count = difficultyLevel >= 2 ? 6 : 3;
     final chosen = steps.take(count).toList();

@@ -21,7 +21,9 @@ class RoutineGameState {
   final int correctPlacements;
   final int errors;
   final List<int> placementOrder; // Which correct-position each placed step had
+  final List<int> responseTimesMs; // Response time for each placement attempt
   final DateTime gameStartedAt;
+  final DateTime? lastPlacementAt;
   final String? lastError;
 
   const RoutineGameState({
@@ -33,7 +35,9 @@ class RoutineGameState {
     this.correctPlacements = 0,
     this.errors = 0,
     this.placementOrder = const [],
+    this.responseTimesMs = const [],
     required this.gameStartedAt,
+    this.lastPlacementAt,
     this.lastError,
   });
 
@@ -46,6 +50,13 @@ class RoutineGameState {
   double get accuracyPct =>
       totalSteps > 0 ? (correctPlacements / totalSteps) * 100 : 0.0;
 
+  double get avgResponseTimeMs {
+    if (responseTimesMs.isEmpty) return 0;
+    final validTimes = responseTimesMs.where((t) => t > 0).toList();
+    if (validTimes.isEmpty) return 0;
+    return validTimes.reduce((a, b) => a + b) / validTimes.length;
+  }
+
   bool get isPerfect => isComplete && correctPlacements == totalSteps;
 
   RoutineGameState copyWith({
@@ -55,6 +66,8 @@ class RoutineGameState {
     int? correctPlacements,
     int? errors,
     List<int>? placementOrder,
+    List<int>? responseTimesMs,
+    DateTime? lastPlacementAt,
     String? lastError,
   }) {
     return RoutineGameState(
@@ -66,7 +79,9 @@ class RoutineGameState {
       correctPlacements: correctPlacements ?? this.correctPlacements,
       errors: errors ?? this.errors,
       placementOrder: placementOrder ?? this.placementOrder,
+      responseTimesMs: responseTimesMs ?? this.responseTimesMs,
       gameStartedAt: gameStartedAt,
+      lastPlacementAt: lastPlacementAt ?? this.lastPlacementAt,
       lastError: lastError ?? this.lastError,
     );
   }
@@ -131,6 +146,11 @@ class RoutineService {
     if (state.state != RoutineState.playing) return null;
     if (!state.canPlaceMore) return null;
 
+    final now = DateTime.now();
+    final responseTimeMs = now
+        .difference(state.lastPlacementAt ?? state.gameStartedAt)
+        .inMilliseconds;
+
     final expectedId = state.board.correctSequence[state.stepsPlaced];
     final isCorrect = step.stepId == expectedId;
 
@@ -151,6 +171,8 @@ class RoutineService {
         ...state.placementOrder,
         state.board.correctSequence.indexOf(step.stepId),
       ],
+      responseTimesMs: [...state.responseTimesMs, responseTimeMs],
+      lastPlacementAt: now,
       state: nextPlaced >= state.totalSteps
           ? RoutineState.completed
           : RoutineState.playing,

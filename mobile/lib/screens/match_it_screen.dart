@@ -2,6 +2,15 @@
 ///
 /// Flow: start session -> fetch board from server -> play locally ->
 /// complete session (reports accuracy / response time to the backend).
+///
+/// Telemetry: every flip is buffered and POSTed fire-and-forget to
+/// /games/sessions/{id}/actions; a 10s idle "stuck" event fires once per
+/// episode while playing. On offline/failure the buffered actions ride the
+/// existing sync queue via OfflineSyncService.
+///
+/// Accessibility: 4-column grid keeps touch targets >=60dp, large type,
+/// semantic labels on every card, soft (silent) feedback hooks, and zero
+/// punishment animation on wrong answers (cards simply flip back).
 library;
 
 import 'dart:async';
@@ -15,6 +24,16 @@ import '../services/api_service.dart';
 import '../services/auth_session.dart';
 import '../services/match_it_service.dart';
 import '../services/offline_sync_service.dart';
+
+/// Warm, calm, high-contrast palette for elderly eyes (NER tones).
+class _NERPalette {
+  static const cardBack = Color(0xFFB45309); // warm terracotta
+  static const cardFace = Color(0xFFFFFBF5); // warm cream
+  static const matchedBg = Color(0xFFE8F5E9); // soft success green
+  static const matchedBorder = Color(0xFF2E7D32);
+  static const faceBorder = Color(0xFFD6A456); // soft gold
+  static const faceText = Color(0xFF3E2723); // deep warm brown
+}
 
 class MatchItScreen extends StatefulWidget {
   final String packId;
@@ -40,7 +59,13 @@ class _MatchItScreenState extends State<MatchItScreen> {
   String? _sessionId;
   String? _error;
   Timer? _flipReset;
+  Timer? _stuckTimer;
   bool _offline = false;
+
+  /// Buffered actions for this session (drives the offline sync path).
+  final List<GameAction> _bufferedActions = [];
+
+  static const _stuckThreshold = Duration(seconds: 10);
 
   @override
   void initState() {
@@ -51,6 +76,7 @@ class _MatchItScreenState extends State<MatchItScreen> {
   @override
   void dispose() {
     _flipReset?.cancel();
+    _stuckTimer?.cancel();
     super.dispose();
   }
 
@@ -74,6 +100,7 @@ class _MatchItScreenState extends State<MatchItScreen> {
         _sessionId = sessionId;
         _game = _logic.initializeGame(sessionId, board);
       });
+      _armStuckTimer();
     } on Exception {
       // Offline-first: play from the local NER pack and queue the session later.
       final board = LocalContentPacks.board(
@@ -88,27 +115,98 @@ class _MatchItScreenState extends State<MatchItScreen> {
         _sessionId = sessionId;
         _game = _logic.initializeGame(sessionId, board);
       });
+      _armStuckTimer();
     }
   }
+
+  // ------------------------------------------------------------------
+  // Telemetry
+  // ------------------------------------------------------------------
+
+  void _bufferAndSend(GameAction action) {
+    _bufferedActions.add(action);
+    if (_offline) return; // stays buffered; flushed via sync queue on complete
+    // ponytail: fire-and-forget, accept per-move undercount on flaky networks;
+    // full replay only when the session itself must be queued offline.
+    unawaited(
+      _api
+          .recordGameAction(
+            sessionId: action.sessionId,
+            actionType: action.actionType,
+            actionData: action.actionData,
+            isCorrect: action.isCorrect,
+            responseTimeMs: action.responseTimeMs,
+          )
+          .catchError((_) => false),
+    );
+  }
+
+  void _armStuckTimer() {
+    _stuckTimer?.cancel();
+    final game = _game;
+    if (game == null || game.state != MatchItState.playing) return;
+    _stuckTimer = Timer(_stuckThreshold, () {
+      final current = _game;
+      if (current == null || current.state != MatchItState.playing) return;
+      final sessionId = _sessionId;
+      if (sessionId == null) return;
+      // One shot per idle episode; rearmed by the next tap.
+      _bufferAndSend(GameAction(
+        id: 'stuck_${DateTime.now().millisecondsSinceEpoch}',
+        sessionId: sessionId,
+        actionType: 'stuck',
+        actionData: const {'stuck_duration_ms': 10000},
+        timestamp: DateTime.now(),
+      ));
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // Gameplay
+  // ------------------------------------------------------------------
 
   void _onCardTap(MatchItCard card) {
     final game = _game;
     if (game == null || game.state != MatchItState.playing) return;
 
+    final wasSecondFlip = game.flippedCards[0] != null;
+    final previousCorrect = game.correctMatches;
     final next = _logic.handleCardTap(game, card.id);
     if (next == null) return;
 
     setState(() => _game = next);
 
+    final sessionId = _sessionId;
+    if (sessionId != null) {
+      final resolved = wasSecondFlip; // second flip resolves the attempt
+      final isCorrect = resolved ? next.correctMatches > previousCorrect : null;
+      _bufferAndSend(GameAction(
+        id: 'act_${DateTime.now().millisecondsSinceEpoch}_${card.id}',
+        sessionId: sessionId,
+        actionType: 'flip_card',
+        actionData:
+            _logic.getCardFlipActionData(card.id, card, resolved ? isCorrect : null),
+        isCorrect: isCorrect,
+        responseTimeMs: resolved ? next.responseTimesMs.last : null,
+        timestamp: DateTime.now(),
+      ));
+    }
+    _softFeedback(next.state == MatchItState.checking ? false : true);
+
     if (next.state == MatchItState.checking) {
+      _stuckTimer?.cancel();
       _flipReset?.cancel();
       _flipReset = Timer(const Duration(milliseconds: 900), () {
         if (!mounted) return;
         final reset = _logic.resetFlippedCards(_game!);
         setState(() => _game = reset);
+        _armStuckTimer();
       });
     } else if (next.isComplete) {
+      _stuckTimer?.cancel();
       _completeAndShowResults(next);
+    } else {
+      _armStuckTimer();
     }
   }
 
@@ -120,6 +218,7 @@ class _MatchItScreenState extends State<MatchItScreen> {
     try {
       if (!_offline) {
         summary = await _api.completeGame(sessionId);
+        _bufferedActions.clear(); // server holds the authoritative record
       } else {
         throw ApiException('offline session');
       }
@@ -139,7 +238,7 @@ class _MatchItScreenState extends State<MatchItScreen> {
           startedAt: finalState.gameStartedAt,
           completedAt: DateTime.now(),
         ),
-        actions: const [],
+        actions: List<GameAction>.from(_bufferedActions),
       );
     }
 
@@ -181,6 +280,11 @@ class _MatchItScreenState extends State<MatchItScreen> {
     );
   }
 
+  /// Soft auditory feedback hook — silent no-op until audio assets land.
+  // ponytail: wire SystemSound.play or a localized asset here when the
+  // audio pack is added; never called on wrong answers (no punishment).
+  void _softFeedback(bool positive) {}
+
   Widget _resultRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -196,6 +300,8 @@ class _MatchItScreenState extends State<MatchItScreen> {
 
   void _restart() {
     _flipReset?.cancel();
+    _stuckTimer?.cancel();
+    _bufferedActions.clear();
     setState(() {
       _game = null;
       _sessionId = null;
@@ -250,8 +356,11 @@ class _MatchItScreenState extends State<MatchItScreen> {
               ? const Center(child: CircularProgressIndicator())
               : GridView.builder(
                   padding: const EdgeInsets.all(16),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: game.totalPairs == 9 ? 6 : (game.totalPairs == 6 ? 4 : 4),
+                  // 4 columns keeps every touch target >=60dp on 360dp phones
+                  // (level-3's 6 columns gave ~46dp cells — below the
+                  // 60dp elderly-accessibility floor).
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
                     childAspectRatio: 0.8,
@@ -275,40 +384,58 @@ class _CardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final revealed = card.isFlipped || card.isMatched;
-    return GestureDetector(
-      onTap: card.isMatched ? null : onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: revealed
-              ? (card.isMatched ? Colors.green.shade100 : Colors.teal.shade50)
-              : Colors.teal.shade400,
-          borderRadius: BorderRadius.circular(14),
-          border: revealed ? Border.all(color: Colors.teal.shade300, width: 2) : null,
-        ),
-        child: Center(
-          child: revealed
-              ? Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (card.isMatched)
-                        const Icon(Icons.check_circle, color: Colors.green, size: 28),
-                      const SizedBox(height: 2),
-                      Text(
-                        card.labelLocal,
-                        textAlign: TextAlign.center,
-                        maxLines: 3,
-                        style: TextStyle(
-                          fontSize: card.labelLocal.length > 12 ? 12 : 16,
-                          fontWeight: FontWeight.w600,
+    return Semantics(
+      button: true,
+      label: revealed
+          ? card.labelLocal
+          : 'Card ${card.id}',
+      child: GestureDetector(
+        onTap: card.isMatched ? null : onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: card.isMatched
+                ? _NERPalette.matchedBg
+                : revealed
+                    ? _NERPalette.cardFace
+                    : _NERPalette.cardBack,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: card.isMatched
+                  ? _NERPalette.matchedBorder
+                  : revealed
+                      ? _NERPalette.faceBorder
+                      : _NERPalette.cardBack,
+              width: 2,
+            ),
+          ),
+          child: Center(
+            child: revealed
+                ? Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (card.isMatched)
+                          const Icon(Icons.check_circle,
+                              color: Color(0xFF2E7D32), size: 28),
+                        const SizedBox(height: 2),
+                        Text(
+                          card.labelLocal,
+                          textAlign: TextAlign.center,
+                          maxLines: 3,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: _NERPalette.faceText,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                )
-              : const Icon(Icons.self_improvement, color: Colors.white, size: 40),
+                      ],
+                    ),
+                  )
+                : const Icon(Icons.self_improvement,
+                    color: Colors.white, size: 40),
+          ),
         ),
       ),
     );

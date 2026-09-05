@@ -13,6 +13,12 @@
       "skillPath": "skills/context-mode/SKILL.md",
       "computedHash": "1962755c8f5995762dff3e14b1d2703ae15c37e83fb10d5077ce2ddc595538e7"
     },
+    "grill-me": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/productivity/grill-me/SKILL.md",
+      "computedHash": "9cdbb4b8f7a3aeaef82e6230c9e823500d4a8a1214c726cf342cf9829d34fc7d"
+    },
     "gsd": {
       "source": "ctsstc/get-shit-done-skills",
       "sourceType": "github",
