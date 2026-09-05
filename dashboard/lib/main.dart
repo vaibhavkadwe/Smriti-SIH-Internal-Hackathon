@@ -1,0 +1,970 @@
+/// ElderCare Caregiver Dashboard (Flutter Web) — multi-patient view for
+/// family caregivers, ASHA workers, and clinicians.
+///
+/// Wired to the backend dashboard endpoints:
+///   POST /api/v1/auth/login           -> JWT
+///   GET  /api/v1/dashboard/caregivers/{id}/patients
+///   GET  /api/v1/dashboard/patients/{id}/summary
+///   POST /api/v1/dashboard/alerts/{id}/acknowledge
+library;
+
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+const String _baseUrl = String.fromEnvironment(
+  'API_BASE_URL',
+  defaultValue: 'http://localhost:8000',
+);
+
+// =====================================================================
+// Tiny typed client (self-contained; no shared package dependency)
+//
+// Tokens are persisted (localStorage on web) so a page reload keeps the
+// session, and a 401 transparently refreshes using the refresh token and
+// retries once — fixing the 15-minute access-token expiry killing the UI.
+// =====================================================================
+
+class _Api {
+  static String? _token;
+  static String? _refreshToken;
+  static String? _userId;
+
+  static const _kAccess = 'access_token';
+  static const _kRefresh = 'refresh_token';
+  static const _kUserId = 'user_id';
+
+  static String? get userId => _userId;
+  static bool get hasSession => _token != null && _refreshToken != null;
+
+  /// Load any persisted session at startup.
+  static Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    _token = prefs.getString(_kAccess);
+    _refreshToken = prefs.getString(_kRefresh);
+    _userId = prefs.getString(_kUserId);
+  }
+
+  static Future<void> _persist() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_token != null) {
+      await prefs.setString(_kAccess, _token!);
+    } else {
+      await prefs.remove(_kAccess);
+    }
+    if (_refreshToken != null) {
+      await prefs.setString(_kRefresh, _refreshToken!);
+    } else {
+      await prefs.remove(_kRefresh);
+    }
+    if (_userId != null) {
+      await prefs.setString(_kUserId, _userId!);
+    } else {
+      await prefs.remove(_kUserId);
+    }
+  }
+
+  static Map<String, String> _headers() => {
+        'Content-Type': 'application/json',
+        if (_token != null) 'Authorization': 'Bearer $_token',
+      };
+
+  static Future<dynamic> _post(String path,
+      {Map<String, dynamic>? body, bool auth = true}) async {
+    return _withRefresh(auth, () => http.post(Uri.parse('$_baseUrl$path'),
+        headers: _headers(), body: jsonEncode(body ?? const {})));
+  }
+
+  static Future<dynamic> _get(String path, {bool auth = true}) async {
+    return _withRefresh(auth, () => http.get(Uri.parse('$_baseUrl$path'), headers: _headers()));
+  }
+
+  /// Run a request; on 401 (expired access token) refresh once and retry.
+  static Future<dynamic> _withRefresh(
+      bool auth, Future<http.Response> Function() send) async {
+    var res = await send();
+    if (auth && res.statusCode == 401 && await _refresh()) {
+      res = await send();
+    }
+    return _decode(res);
+  }
+
+  static Future<http.Response> _delete(String path) =>
+      http.delete(Uri.parse('$_baseUrl$path'), headers: _headers());
+
+  static dynamic _decode(http.Response res) {
+    final data = res.body.isEmpty ? null : jsonDecode(res.body);
+    if (res.statusCode >= 200 && res.statusCode < 300) return data;
+    throw Exception((data is Map && data['detail'] != null)
+        ? data['detail'].toString()
+        : 'HTTP ${res.statusCode}');
+  }
+
+  /// Exchange the refresh token for a fresh pair. Returns false when it fails
+  /// (caller should send the user back to login).
+  static Future<bool> _refresh() async {
+    if (_refreshToken == null) return false;
+    try {
+      final res = await http.post(
+        Uri.parse('$_baseUrl/api/v1/auth/refresh'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refresh_token': _refreshToken}),
+      );
+      if (res.statusCode != 200) {
+        await logout();
+        return false;
+      }
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      _token = data['access_token'] as String?;
+      _refreshToken = data['refresh_token'] as String? ?? _refreshToken;
+      await _persist();
+      return _token != null;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> login(String phone, String password) async {
+    final data = await _post('/api/v1/auth/login',
+        body: {'phone': phone, 'password': password}, auth: false);
+    _token = data['access_token'] as String;
+    _refreshToken = data['refresh_token'] as String?;
+    final me = await _get('/api/v1/auth/me');
+    _userId = me['id'] as String?;
+    await _persist();
+  }
+
+  /// Validate a restored session by fetching /auth/me (refreshing if needed).
+  static Future<bool> validateSession() async {
+    if (!hasSession) return false;
+    try {
+      final me = await _get('/api/v1/auth/me');
+      _userId = me['id'] as String? ?? _userId;
+      await _persist();
+      return _userId != null;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> logout() async {
+    _token = null;
+    _refreshToken = null;
+    _userId = null;
+    await _persist();
+  }
+
+  static Future<List<Map<String, dynamic>>> patients(String caregiverId) async {
+    final data = await _get('/api/v1/dashboard/caregivers/$caregiverId/patients');
+    return (data as List).cast<Map<String, dynamic>>();
+  }
+
+  static Future<Map<String, dynamic>> summary(String patientId) async {
+    return await _get('/api/v1/dashboard/patients/$patientId/summary');
+  }
+
+  static Future<void> acknowledge(String alertId) async {
+    await _post('/api/v1/dashboard/alerts/$alertId/acknowledge');
+  }
+
+  static Future<List<Map<String, dynamic>>> schedules(String patientId) async {
+    final data = await _get('/api/v1/reminders/schedules/$patientId');
+    return (data as List).cast<Map<String, dynamic>>();
+  }
+
+  static Future<void> createSchedule(String patientId, String reminderType,
+      String cadence) async {
+    await _post('/api/v1/reminders/schedules',
+        body: {'patient_id': patientId, 'reminder_type': reminderType, 'cadence': cadence});
+  }
+
+  static Future<void> deleteSchedule(String scheduleId) async {
+    // plain DELETE, no body
+    final res = await _delete('/api/v1/reminders/schedules/$scheduleId');
+    _decode(res);
+  }
+
+  static Future<List<Map<String, dynamic>>> auditLogs({int limit = 50}) async {
+    final data = await _get('/api/v1/compliance/audit-logs?limit=$limit');
+    return (data as List).cast<Map<String, dynamic>>();
+  }
+}
+
+// =====================================================================
+// Trend sparkline (pure CustomPaint — no chart dependency)
+// =====================================================================
+
+class TrendChart extends StatelessWidget {
+  final List<double> values; // null-free; gaps already dropped by caller
+  final String title;
+  final String unitLabel;
+  const TrendChart(
+      {super.key, required this.values, required this.title, this.unitLabel = ''});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 90,
+              width: double.infinity,
+              child: values.length < 2
+                  ? const Center(
+                      child: Text('Not enough data yet',
+                          style: TextStyle(color: Colors.grey)))
+                  : CustomPaint(painter: _TrendPainter(values: values, color: Colors.teal)),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              values.length < 2
+                  ? ''
+                  : 'last ${values.length} active days · ${_range()}$unitLabel',
+              style: const TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _range() {
+    final lo = values.reduce((a, b) => a < b ? a : b);
+    final hi = values.reduce((a, b) => a > b ? a : b);
+    return lo == hi ? lo.toStringAsFixed(0) : '${lo.toStringAsFixed(0)}–${hi.toStringAsFixed(0)}';
+  }
+}
+
+class _TrendPainter extends CustomPainter {
+  final List<double> values;
+  final Color color;
+  _TrendPainter({required this.values, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.length < 2) return;
+    var lo = values.reduce((a, b) => a < b ? a : b);
+    var hi = values.reduce((a, b) => a > b ? a : b);
+    if (hi - lo < 1e-9) {
+      hi = lo + 1; // flat line
+    }
+    double x(int i) => i / (values.length - 1) * size.width;
+    double y(double v) => size.height - 6 - (v - lo) / (hi - lo) * (size.height - 12);
+
+    final line = Path()..moveTo(x(0), y(values[0]));
+    for (var i = 1; i < values.length; i++) {
+      line.lineTo(x(i), y(values[i]));
+    }
+    final fill = Path.from(line)
+      ..lineTo(x(values.length - 1), size.height)
+      ..lineTo(x(0), size.height)
+      ..close();
+
+    canvas.drawPath(fill, Paint()
+      ..color = color.withValues(alpha: 0.15)
+      ..style = PaintingStyle.fill);
+    canvas.drawPath(line, Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.4
+      ..isAntiAlias = true);
+  }
+
+  @override
+  bool shouldRepaint(_TrendPainter old) => old.values != values;
+}
+
+
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await _Api.init();
+  runApp(const CaregiverDashboardApp());
+}
+
+class CaregiverDashboardApp extends StatelessWidget {
+  const CaregiverDashboardApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Caregiver Dashboard — ElderCare',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1B6B4A),
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
+      ),
+      home: const _Root(),
+    );
+  }
+}
+
+class _Root extends StatefulWidget {
+  const _Root();
+
+  @override
+  State<_Root> createState() => _RootState();
+}
+
+class _RootState extends State<_Root> {
+  bool _checking = true;
+  String? _userId;
+
+  @override
+  void initState() {
+    super.initState();
+    _restore();
+  }
+
+  Future<void> _restore() async {
+    final ok = await _Api.validateSession();
+    if (!mounted) return;
+    setState(() {
+      _userId = ok ? _Api.userId : null;
+      _checking = false;
+    });
+  }
+
+  void _onLoggedIn(String userId) => setState(() => _userId = userId);
+
+  Future<void> _logout() async {
+    await _Api.logout();
+    if (mounted) setState(() => _userId = null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_checking) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (_userId != null) {
+      return _DashboardScreen(caregiverId: _userId!, onLogout: _logout);
+    }
+    return _LoginScreen(onLoggedIn: _onLoggedIn);
+  }
+}
+
+// =====================================================================
+// Login
+// =====================================================================
+
+class _LoginScreen extends StatefulWidget {
+  final void Function(String userId) onLoggedIn;
+  const _LoginScreen({required this.onLoggedIn});
+
+  @override
+  State<_LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<_LoginScreen> {
+  final _phone = TextEditingController();
+  final _password = TextEditingController();
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _phone.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _signIn() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await _Api.login(_phone.text.trim(), _password.text);
+      if (!mounted) return;
+      widget.onLoggedIn(_Api.userId!);
+    } on Exception catch (e) {
+      if (mounted) setState(() => _error = '$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Icon(Icons.dashboard, size: 72, color: Colors.teal),
+                const SizedBox(height: 8),
+                Text('Caregiver Dashboard',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineLarge),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: _phone,
+                  decoration: const InputDecoration(
+                      labelText: 'Phone', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _password,
+                  obscureText: true,
+                  onSubmitted: (_) => _signIn(),
+                  decoration: const InputDecoration(
+                      labelText: 'Password', border: OutlineInputBorder()),
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_error!, textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.red)),
+                ],
+                const SizedBox(height: 22),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16)),
+                  onPressed: _busy ? null : _signIn,
+                  child: _busy
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Sign In', style: TextStyle(fontSize: 18)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =====================================================================
+// Dashboard
+// =====================================================================
+
+class _DashboardScreen extends StatefulWidget {
+  final String caregiverId;
+  final VoidCallback onLogout;
+  const _DashboardScreen({required this.caregiverId, required this.onLogout});
+
+  @override
+  State<_DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<_DashboardScreen> {
+  List<Map<String, dynamic>>? _patients;
+  String? _selectedPatientId;
+  Map<String, dynamic>? _summary;
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>>? _schedules;
+  List<Map<String, dynamic>>? _auditLogs;
+  bool _isClinicalView(Map s) => s['view'] == 'clinical';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final patients = await _Api.patients(widget.caregiverId);
+      if (!mounted) return;
+      setState(() {
+        _patients = patients;
+        _loading = false;
+      });
+      if (patients.isNotEmpty) {
+        await _select(patients.first['patient_id'] as String, silent: true);
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = '$e';
+        });
+      }
+    }
+  }
+
+  Future<void> _select(String patientId, {bool silent = false}) async {
+    if (!silent) setState(() => _loading = true);
+    try {
+      final summary = await _Api.summary(patientId);
+      // Schedules load lazily too — cheap, and keeps one code path.
+      List<Map<String, dynamic>>? schedules;
+      try {
+        schedules = await _Api.schedules(patientId);
+      } catch (_) {
+        schedules = null; // some roles (admin) cannot fetch schedules per-patient
+      }
+      if (!mounted) return;
+      setState(() {
+        _selectedPatientId = patientId;
+        _summary = summary;
+        _schedules = schedules;
+        _loading = false;
+      });
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = '$e';
+        });
+      }
+    }
+  }
+
+  Future<void> _addSchedule(String reminderType, String cadence) async {
+    final pid = _selectedPatientId;
+    if (pid == null) return;
+    try {
+      await _Api.createSchedule(pid, reminderType, cadence);
+      await _select(pid, silent: true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$reminderType reminder added at $cadence')));
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not add: $e')));
+      }
+    }
+  }
+
+  Future<void> _removeSchedule(String scheduleId) async {
+    try {
+      await _Api.deleteSchedule(scheduleId);
+      await _select(_selectedPatientId!, silent: true);
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not remove: $e')));
+      }
+    }
+  }
+
+  Future<void> _toggleAudit() async {
+    if (_auditLogs != null) {
+      setState(() => _auditLogs = null); // collapse
+      return;
+    }
+    try {
+      final logs = await _Api.auditLogs(limit: 50);
+      if (mounted) setState(() => _auditLogs = logs);
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() => _auditLogs = [
+          {'detail': 'Audit view is admin-only. ($e)'}
+        ]);
+      }
+    }
+  }
+
+  Future<void> _ack(String alertId) async {
+    try {
+      await _Api.acknowledge(alertId);
+      await _select(_selectedPatientId!);
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Caregiver Dashboard — ElderCare'),
+        actions: [
+          IconButton(
+              tooltip: 'Compliance audit trail (admin)',
+              onPressed: _toggleAudit,
+              icon: const Icon(Icons.receipt_long)),
+          IconButton(
+              tooltip: 'Refresh',
+              onPressed: _selectedPatientId == null ? _load : () => _select(_selectedPatientId!),
+              icon: const Icon(Icons.refresh)),
+          IconButton(tooltip: 'Sign out', onPressed: widget.onLogout, icon: const Icon(Icons.logout)),
+        ],
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(_error!, style: const TextStyle(fontSize: 17)),
+              const SizedBox(height: 16),
+              FilledButton(onPressed: _load, child: const Text('Retry')),
+            ],
+          ),
+        ),
+      );
+    }
+    final patients = _patients ?? const [];
+    if (patients.isEmpty) {
+      return const Center(
+        child: Text('No patients linked to this account yet.',
+            style: TextStyle(fontSize: 18, color: Colors.grey)),
+      );
+    }
+    final summary = _summary;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 900;
+        final content = <Widget>[
+          if (summary != null) _summaryContent(summary),
+        ];
+        return ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            if (wide)
+              Row(children: [
+                Expanded(child: _roster(patients)),
+              ])
+            else
+              _roster(patients),
+            const SizedBox(height: 16),
+            ...content,
+            if (_auditLogs != null) ...[
+              const SizedBox(height: 16),
+              _auditPanel(),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _roster(List<Map<String, dynamic>> patients) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: _selectedPatientId,
+            isExpanded: true,
+            hint: const Text('Select patient'),
+            items: patients.map((p) {
+              return DropdownMenuItem<String>(
+                value: p['patient_id'] as String,
+                child: Text(
+                  '${p['name']} · ${p['district'] ?? 'NER'} · '
+                  '${p['cognitive_baseline'] ?? ''} · '
+                  '${(p['relationship_type'] ?? '').toString().toUpperCase()}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              );
+            }).toList(),
+            onChanged: (v) {
+              if (v != null) _select(v);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _summaryContent(Map<String, dynamic> s) {
+    final isClinical = _isClinicalView(s);
+    final accuracy = (s['accuracy_pct'] as num? ?? 0).toDouble();
+    final compliance = (s['compliance_pct'] as num? ?? 0).toDouble();
+    final speed = (s['avg_response_time_ms'] as num? ?? 0).toDouble();
+    final alerts = s['active_alerts'] as List? ?? const [];
+    final flags = (s['clinical_flags'] as Map<String, dynamic>? ?? const {})
+        .cast<String, dynamic>();
+    final trends = (s['daily_trends'] as List? ?? const [])
+        .cast<Map<String, dynamic>>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!isClinical) ...[
+          Card(
+            color: Colors.amber.shade50,
+            child: const Padding(
+              padding: EdgeInsets.all(14),
+              child: Row(children: [
+                Icon(Icons.lock_outline, size: 22, color: Colors.deepOrange),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Basic view — clinical detail (accuracy, trends, flags) is '
+                    'visible to linked clinical staff only.',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        // Metric tiles
+        if (isClinical) ...[
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 700;
+              final tiles = [
+                _tile('Cognitive accuracy (7d)', '${accuracy.toStringAsFixed(0)}%',
+                    '${s['games_played'] ?? 0} games', accuracy >= 70 ? Colors.teal : Colors.orange),
+                _tile('Reminder compliance', '${compliance.toStringAsFixed(0)}%',
+                    '${s['reminders_acknowledged']}/${s['reminders_total']} acknowledged',
+                    compliance >= 75 ? Colors.green : Colors.red),
+                _tile('Avg response time', speed > 0 ? '${(speed / 1000).toStringAsFixed(1)}s' : '—',
+                    'last 7 days', Colors.blueGrey),
+              ];
+              if (wide) {
+                return Row(
+                  children: tiles
+                      .map((t) => Expanded(child: Padding(padding: const EdgeInsets.only(right: 12), child: t)))
+                      .toList(),
+                );
+              }
+              return Column(children: [
+                for (final t in tiles)
+                  Padding(padding: const EdgeInsets.only(bottom: 12), child: t),
+              ]);
+            },
+          ),
+          const SizedBox(height: 12),
+        ],
+        // Trend charts (clinical detail — hidden for basic tier by the backend)
+        if (trends.isNotEmpty && isClinical) ...[
+          LayoutBuilder(builder: (context, c) {
+            final acc = trends
+                .map((t) => (t['accuracy_pct'] as num?)?.toDouble())
+                .whereType<double>()
+                .toList();
+            final rt = trends
+                .map((t) => (t['avg_response_time_ms'] as num?)?.toDouble())
+                .whereType<double>()
+                .toList();
+            final charts = [
+              TrendChart(values: acc, title: 'Daily accuracy trend (14d)', unitLabel: '%'),
+              TrendChart(values: rt, title: 'Response time trend (14d)', unitLabel: 'ms'),
+            ];
+            if (c.maxWidth >= 700) {
+              return Row(children: [
+                for (final ch in charts)
+                  Expanded(child: Padding(padding: const EdgeInsets.only(right: 12), child: ch)),
+              ]);
+            }
+            return Column(children: [
+              for (final ch in charts)
+                Padding(padding: const EdgeInsets.only(bottom: 12), child: ch),
+            ]);
+          }),
+          const SizedBox(height: 12),
+        ],
+        // Reminder schedules (caregiver-editable)
+        if (_schedules != null) _schedulesCard(),
+        const SizedBox(height: 8),
+        // Alerts
+        if (alerts.isNotEmpty) ...[
+          Text('Active risk alerts',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red.shade700)),
+          const SizedBox(height: 8),
+          for (final a in alerts.cast<Map<String, dynamic>>())
+            Card(
+              color: (a['severity'] == 'critical' || a['severity'] == 'warning')
+                  ? Colors.red.shade50
+                  : Colors.amber.shade50,
+              child: ListTile(
+                leading: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 30),
+                title: Text(a['summary'] as String? ?? 'Alert',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('Type: ${a['trigger_type']} · ${a['severity']}'),
+                trailing: TextButton(
+                  onPressed: () => _ack(a['id'] as String),
+                  child: const Text('Acknowledge'),
+                ),
+              ),
+            ),
+        ],
+        const SizedBox(height: 8),
+        // Clinical insight
+        if (isClinical)
+          Card(
+            child: ListTile(
+              leading: Icon(
+                flags['cognitive_drop_detected'] == true
+                    ? Icons.trending_down
+                    : Icons.trending_up,
+                color: flags['cognitive_drop_detected'] == true ? Colors.red : Colors.green,
+                size: 32,
+              ),
+              title: Text(flags['cognitive_drop_detected'] == true
+                  ? 'Cognitive drop detected (<60% accuracy)'
+                  : 'Cognitive baseline stable'),
+              subtitle: Text('Reminder flag: ${flags['high_missed_reminders'] == true ? '3+ missed in 7 days' : 'none'}'),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _schedulesCard() {
+    final schedules = _schedules ?? const <Map<String, dynamic>>[];
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Reminder schedules',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            const Text(
+                'Times are local (IST). Format: HH:MM, comma-separated for multiple.',
+                style: TextStyle(fontSize: 12, color: Colors.black54)),
+            const SizedBox(height: 10),
+            for (final s in schedules.cast<Map<String, dynamic>>())
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                leading: Icon(
+                  s['reminder_type'] == 'medicine'
+                      ? Icons.medication
+                      : s['reminder_type'] == 'water'
+                          ? Icons.water_drop
+                          : s['reminder_type'] == 'food'
+                              ? Icons.restaurant
+                              : Icons.directions_walk,
+                  color: Colors.teal,
+                ),
+                title: Text('${s['reminder_type']}'.toUpperCase(),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('${s['cadence']} · ${s['is_active'] == true ? 'active' : 'paused'}'),
+                trailing: IconButton(
+                  tooltip: 'Remove schedule',
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  onPressed: () => _removeSchedule(s['id'] as String),
+                ),
+              ),
+            const SizedBox(height: 4),
+            _addScheduleRow(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _addScheduleRow() {
+    const types = ['medicine', 'water', 'food', 'exercise'];
+    String type = 'medicine';
+    final timeCtl = TextEditingController(text: '08:00');
+    return StatefulBuilder(
+      builder: (context, setState) => Row(
+        children: [
+          DropdownButton<String>(
+            value: type,
+            items: [
+              for (final t in types)
+                DropdownMenuItem(value: t, child: Text(t.toUpperCase()))
+            ],
+            onChanged: (v) => setState(() => type = v ?? type),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: timeCtl,
+              decoration: const InputDecoration(
+                  isDense: true, border: OutlineInputBorder(), labelText: 'HH:MM'),
+            ),
+          ),
+          const SizedBox(width: 10),
+          IconButton(
+            tooltip: 'Add schedule',
+            icon: const Icon(Icons.add_circle, color: Colors.teal, size: 32),
+            onPressed: () => _addSchedule(type, timeCtl.text.trim()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _auditPanel() {
+    final logs = _auditLogs ?? const <Map<String, dynamic>>[];
+    return Card(
+      color: Colors.blueGrey.shade50,
+      child: Container(
+        constraints: const BoxConstraints(maxHeight: 300),
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: logs.length,
+          itemBuilder: (context, i) {
+            final l = logs[i];
+            return ListTile(
+              dense: true,
+              title: Text('${l['action']} · ${l['resource_type']}',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              subtitle: Text(
+                'by ${l['user_id']} · ${l['timestamp']}'
+                '${l['ip_address'] != null ? ' · ${l['ip_address']}' : ''}',
+                style: const TextStyle(fontSize: 11, color: Colors.black54),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _tile(String title, String value, String subtitle, Color color) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: const TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(value,
+                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: color)),
+            const SizedBox(height: 4),
+            Text(subtitle, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+          ],
+        ),
+      ),
+    );
+  }
+}

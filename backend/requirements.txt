@@ -1,0 +1,28 @@
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
+sqlalchemy>=2.0.23
+alembic>=1.13.0
+psycopg[binary]>=3.1.18
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.1
+cryptography>=41.0.0
+python-multipart>=0.0.6
+redis>=5.0.1
+pytest>=7.4.3
+pytest-asyncio>=0.23.2
+pgvector>=0.2.5
+requests>=2.31.0
+httpx>=0.25.0
+aiosqlite>=0.19.0
+greenlet>=3.0.0
+# --- RAG semantic embeddings (local) + PDF extraction (Phase 10/roadmap P5).
+# Heavy: torch. CI/tests run with EMBEDDING_PROVIDER=heuristic and skip these.
+pypdf>=4.0.0
+sentence-transformers==5.3.0
+transformers==4.57.1
+sentencepiece>=0.2.0
+protobuf>=4.25.0
+tiktoken>=0.7.0

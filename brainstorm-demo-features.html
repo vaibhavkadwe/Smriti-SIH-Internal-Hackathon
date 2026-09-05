@@ -1,0 +1,556 @@
+<title>Demo-Worthy Features: Elder Care Platform</title>
+
+<style>
+:root {
+  --accent: #6366f1;
+  --accent-light: #e0e7ff;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --critical: #ef4444;
+  --text: #1f2937;
+  --text-secondary: #6b7280;
+  --border: #e5e7eb;
+  --bg: #ffffff;
+  --bg-alt: #f9fafb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --accent: #818cf8;
+    --accent-light: #312e81;
+    --success: #34d399;
+    --warning: #fbbf24;
+    --critical: #f87171;
+    --text: #f3f4f6;
+    --text-secondary: #d1d5db;
+    --border: #374151;
+    --bg: #111827;
+    --bg-alt: #1f2937;
+  }
+}
+
+:root[data-theme="dark"] {
+  --accent: #818cf8;
+  --accent-light: #312e81;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --critical: #f87171;
+  --text: #f3f4f6;
+  --text-secondary: #d1d5db;
+  --border: #374151;
+  --bg: #111827;
+  --bg-alt: #1f2937;
+}
+
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: var(--text);
+  text-wrap: balance;
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  margin: 0 0 2rem 0;
+}
+
+.intro {
+  background: var(--accent-light);
+  color: var(--accent);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  margin-bottom: 2rem;
+  border-left: 4px solid var(--accent);
+}
+
+.intro p { margin: 0; line-height: 1.5; }
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.feature-card {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.feature-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+  transform: translateY(-2px);
+}
+
+.feature-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.feature-icon {
+  font-size: 1.75rem;
+  flex-shrink: 0;
+}
+
+.feature-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+}
+
+.feature-description {
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.feature-tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.625rem;
+  background: var(--accent);
+  color: white;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+.tag.optional {
+  background: var(--text-secondary);
+}
+
+.tag.impact {
+  background: var(--success);
+}
+
+.tag.complexity {
+  background: var(--warning);
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal-content {
+  background: var(--bg);
+  border-radius: 1rem;
+  padding: 2rem;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 0.5rem;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: var(--text);
+}
+
+.modal h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  color: var(--text);
+}
+
+.modal-section {
+  margin-bottom: 1.5rem;
+}
+
+.modal-section h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.5rem 0;
+}
+
+.modal-section p {
+  margin: 0 0 0.75rem 0;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.modal-section ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--text-secondary);
+}
+
+.modal-section li {
+  margin-bottom: 0.5rem;
+}
+
+.architecture-diagram {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+.voting-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  flex: 1;
+  min-width: 140px;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.btn-secondary {
+  background: var(--bg-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--border);
+}
+
+.summary {
+  background: var(--bg-alt);
+  border-left: 4px solid var(--accent);
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  margin-top: 2rem;
+}
+
+.summary h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  color: var(--text);
+}
+
+.summary ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--text-secondary);
+}
+
+.summary li {
+  margin-bottom: 0.5rem;
+}
+</style>
+
+<div class="container">
+  <h1>Demo-Worthy Additions</h1>
+  <p class="subtitle">SIH26003 Elder-Care Cognitive Companion — Optional Features for SIH Judges</p>
+
+  <div class="intro">
+    <p><strong>Goal:</strong> Identify 2–3 compelling additions that demonstrate innovation without extending Phase 1 timeline. Click each card to explore details, architecture, and implementation scope.</p>
+  </div>
+
+  <div class="features-grid" id="featuresGrid"></div>
+
+  <div class="modal" id="featureModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <div class="summary">
+    <h2>Your Choice</h2>
+    <p>Select 1–2 features below. I'll integrate them into Phase 1 architecture (no scope creep, just smart scaffolding). <strong>Which appeals to you most for the demo?</strong></p>
+  </div>
+</div>
+
+<script>
+const features = [
+  {
+    id: "wearable-mock",
+    icon: "⌚",
+    title: "Wearable Data Mock",
+    description: "Simulate fitness tracker integration (steps, heart rate) for clinicians to correlate with cognitive performance.",
+    tags: ["SIH appeal", "Clinical insight", "Optional"],
+    complexity: "Low",
+    impact: "High",
+    details: {
+      problem: "Clinicians would benefit from correlating cognitive performance with physical activity and vital signs, but full wearable integration is out of scope.",
+      solution: "Ship a fake-data provider that generates realistic daily step counts, resting heart rate, and sleep duration synced to the patient's timezone. The caregiver dashboard shows a sparkline ('Activity correlated with memory performance'). Real integrations (Fitbit, Apple Health) swap in later via provider pattern.",
+      architecture: [
+        "WearableProvider interface (abstract base)",
+        "MockWearableProvider implementation (generates realistic patterns)",
+        "RealWearableProvider stub (imports only, not implemented)",
+        "Caregiver dashboard endpoint: /patient/{id}/correlation?metric=memory_accuracy&window=7d"
+      ],
+      timeline: "2–3 days (mostly mock data generation + one API endpoint)",
+      judgeAppeal: "Demonstrates forward-thinking architecture; shows how production integrations slot in without rework."
+    }
+  },
+  {
+    id: "offline-first",
+    icon: "📱",
+    title: "Offline-First Gaming (Deep Sync Queue)",
+    description: "Games playable completely offline with background sync when connectivity returns — critical for rural NER.",
+    tags: ["Rural connectivity", "Core feature", "HL priority"],
+    complexity: "Medium",
+    impact: "Very High",
+    details: {
+      problem: "NER has spotty connectivity. Patients should play games without needing the internet; sessions sync to caregiver dashboard when the network returns.",
+      solution: "Build a comprehensive offline-first architecture: mobile app stores game sessions in local SQLite, queues them for upload, and replays them to the backend when online. Conflict resolution: if a session was created offline, it's a fresh insert on sync; if a session started online and continued offline, only the local delta (new moves) uploads.",
+      architecture: [
+        "Local GameSession table (SQLite via drift/sqflite)",
+        "SyncQueue table: {id, resource_type, operation, payload, created_at, synced_at}",
+        "Background service: polls every 30s when offline, retries exponentially when online",
+        "Backend: /sync endpoint accepts a batch of queued events, idempotent (same event twice → no duplicate)",
+        "UI feedback: offline badge on game, green 'syncing' spinner when reconnecting"
+      ],
+      timeline: "4–5 days (Flutter sync service + backend batch handler)",
+      judgeAppeal: "Solves a real India problem (connectivity); shows production-grade async thinking."
+    }
+  },
+  {
+    id: "multi-language-voice",
+    icon: "🎤",
+    title: "Voice Companion in Regional Languages",
+    description: "Claude-powered voice agent that speaks back in Assamese, Bengali, or Hindi — built from day 1, not bolted on later.",
+    tags: ["Bhashini integration", "Accessibility", "Core value"],
+    complexity: "Medium",
+    impact: "High",
+    details: {
+      problem: "Text-only interface excludes low-literacy elderly patients. Voice interaction is essential; voice in their language is transformative.",
+      solution: "Integrate Bhashini ASR + TTS from the start. Patient speaks in their language, backend transcribes via Bhashini ASR, sends to Claude (English), Bhashini TTS reads the response back in the patient's language. Simple system prompt: ask the patient about their day, remind them of upcoming medicine, offer encouragement.",
+      architecture: [
+        "LanguageServiceProvider interface (Bhashini backend)",
+        "VoiceCompanion service: listen() → ASR → Claude → TTS",
+        "Mobile: flutter_speech (recording) + audio_players (playback)",
+        "Backend: /voice/companion POST {audio_wav, language_code}",
+        "Rate limit: 1 voice session / 10min per patient (prevent abuse)"
+      ],
+      timeline: "3–4 days (Bhashini account setup + one endpoint + mobile recorder)",
+      judgeAppeal: "Judges are impressed by inclusive design; low-literacy accessibility is a real differentiator."
+    }
+  },
+  {
+    id: "caregiver-mobile",
+    icon: "📲",
+    title: "Caregiver Mobile App (Lite)",
+    description: "Quick mobile view for caregivers to check patient activity, acknowledge reminders, get alerts — no web dashboard required.",
+    tags: ["Multi-platform", "Field work", "Optional"],
+    complexity: "High",
+    impact: "Medium",
+    details: {
+      problem: "ASHA workers in the field want a quick app, not a web dashboard. A mobile view keeps them connected without a second codebase.",
+      solution: "Reuse the Flutter Web codebase to build a Flutter Mobile app for caregivers. Shared Dart models mean feature parity with zero duplication. Caregiver app is read-only + quick actions (acknowledge reminder, flag concern). Same backend, different UI entry point.",
+      architecture: [
+        "Shared lib/models/* (GameSession, ReminderEvent, PatientProfile — same code mobile + web)",
+        "lib/screens/caregiver_mobile/* for mobile-specific layouts (vertical stacks, large touch targets)",
+        "lib/screens/caregiver_web/* for web dashboard",
+        "Backend: role-based routes; both frontends hit the same /caregiver/patients endpoint"
+      ],
+      timeline: "5–6 days (mobile UI layouts + tested on iOS + Android emulators)",
+      judgeAppeal: "Shows multi-platform thinking; ASHA workers with phones is realistic deployment."
+    }
+  },
+  {
+    id: "ai-alerts",
+    icon: "🚨",
+    title: "AI-Powered Alert Engine (Rule-Based + LLM Triage)",
+    description: "Threshold-based alerts (3 missed meds) + Claude summarizes why it matters for the caregiver.",
+    tags: ["Clinical insight", "LLM integration", "MVP+"],
+    complexity: "Medium",
+    impact: "Medium",
+    details: {
+      problem: "Raw numbers (3 missed reminders) don't tell a caregiver *why* it matters. Alerts are noise without context.",
+      solution: "Build a two-tier alert engine: (1) rule-based triggers (3 misses in 7 days), (2) Claude API summarizes the alert in plain language for the caregiver. E.g., 'Alert: Patient has missed medicine reminders 4 times this week. This may indicate confusion or resistance to medication — suggest a check-in.'",
+      architecture: [
+        "AlertRule table: {id, trigger_type, threshold, action_on_breach}",
+        "AlertEvaluator job (runs hourly via APScheduler): checks all active rules",
+        "On breach: AlertFlag created + queued to AlertSummarizer",
+        "AlertSummarizer (async): feeds context (patient name, recent game scores, missed reminder count) to Claude, stores summary",
+        "Caregiver dashboard: /patient/{id}/alerts shows rule + summary + action buttons"
+      ],
+      timeline: "3–4 days (rule engine + Claude integration + job scheduler)",
+      judgeAppeal: "LLM-powered clinical decision support is cutting-edge; shows how AI isn't just games."
+    }
+  },
+  {
+    id: "gamification-streaks",
+    icon: "🔥",
+    title: "Achievement & Streak System",
+    description: "Badges and daily streaks to encourage consistent engagement — motivational layer on top of games.",
+    tags: ["Engagement", "Gamification", "Polish"],
+    complexity: "Low",
+    impact: "Medium",
+    details: {
+      problem: "Cognitive games alone aren't enough motivation for elderly patients. Streaks and visible progress drive daily habit.",
+      solution: "Add a lightweight achievement system: 'Play 3 days in a row' → badge unlock, streak counter on home screen. Caregiver sees patient's longest streak and can celebrate ('Great work, 7 days!'). Minimal backend changes: just a few columns on PatientProfile (current_streak, longest_streak, badges JSONB).",
+      architecture: [
+        "PatientProfile: current_streak int, longest_streak int, badges[] JSONB",
+        "AchievementEvaluator job (daily): checks if patient played yesterday, increments current_streak",
+        "Badge definitions (seed data): 'First Game' (play any game), '7-Day Streak', '30-Day Streak', 'Memory Master' (avg accuracy > 90%)",
+        "Mobile home screen: displays current streak + unlocked badges",
+        "Caregiver dashboard: trend of streak vs. time (motivational insight)"
+      ],
+      timeline: "2–3 days (seed data + mobile UI + one job)",
+      judgeAppeal: "Judges appreciate behavioral psychology; streaks are proven engagement multipliers."
+    }
+  }
+];
+
+function renderFeatures() {
+  const grid = document.getElementById("featuresGrid");
+  grid.innerHTML = features.map(f => `
+    <div class="feature-card" onclick="openModal('${f.id}')">
+      <div class="feature-header">
+        <div class="feature-icon">${f.icon}</div>
+        <h3 class="feature-title">${f.title}</h3>
+      </div>
+      <p class="feature-description">${f.description}</p>
+      <div class="feature-tags">
+        <span class="tag">${f.complexity}</span>
+        <span class="tag impact">${f.impact} Impact</span>
+      </div>
+    </div>
+  `).join("");
+}
+
+function openModal(featureId) {
+  const feature = features.find(f => f.id === featureId);
+  const modal = document.getElementById("featureModal");
+  const body = document.getElementById("modalBody");
+
+  let archHtml = "";
+  if (feature.details.architecture) {
+    archHtml = `
+      <div class="modal-section">
+        <h3>Architecture Sketch</h3>
+        <div class="architecture-diagram">
+          <ul>
+            ${feature.details.architecture.map(item => `<li><code>${item}</code></li>`).join("")}
+          </ul>
+        </div>
+      </div>
+    `;
+  }
+
+  body.innerHTML = `
+    <h2>${feature.title}</h2>
+    <div class="modal-section">
+      <h3>Why This Matters</h3>
+      <p>${feature.details.problem}</p>
+    </div>
+    <div class="modal-section">
+      <h3>The Approach</h3>
+      <p>${feature.details.solution}</p>
+    </div>
+    ${archHtml}
+    <div class="modal-section">
+      <h3>Timeline & Scope</h3>
+      <p><strong>${feature.details.timeline}</strong></p>
+    </div>
+    <div class="modal-section">
+      <h3>Judge Appeal</h3>
+      <p><em>${feature.details.judgeAppeal}</em></p>
+    </div>
+    <div class="voting-buttons">
+      <button class="btn btn-primary" onclick="vote('${featureId}', 'yes')">Yes, Include This</button>
+      <button class="btn btn-secondary" onclick="vote('${featureId}', 'skip')">Skip for Now</button>
+    </div>
+  `;
+
+  modal.classList.add("active");
+}
+
+function closeModal() {
+  document.getElementById("featureModal").classList.remove("active");
+}
+
+function vote(featureId, choice) {
+  const feature = features.find(f => f.id === featureId);
+  console.log(`Voted: ${feature.title} → ${choice}`);
+  closeModal();
+  // In a real app, this would post to your backend or trigger a workflow
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeModal();
+});
+
+renderFeatures();
+</script>

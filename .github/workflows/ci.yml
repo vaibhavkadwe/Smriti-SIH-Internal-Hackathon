@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (tests + live PG smoke)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: eldercare
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/eldercare
+      ENVIRONMENT: test
+      ENABLE_BACKGROUND_JOBS: "false"
+      RATE_LIMIT_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Backend unit + API tests (SQLite, no DB needed)
+        run: |
+          python -m pytest app/tests tests -q
+          python test_phase2_services.py
+      - name: Apply migration on a clean Postgres
+        run: alembic upgrade head
+      - name: Live E2E smoke against Postgres
+        run: |
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+          SRV=$!
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:8000/health >/dev/null && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8000/health >/dev/null || { echo "backend failed to start"; kill $SRV; exit 1; }
+          python smoke_e2e.py
+          RC=$?
+          kill $SRV 2>/dev/null || true
+          exit $RC
+
+  frontend:
+    name: Flutter (mobile + dashboard)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Mobile — deps, drift codegen, analyze
+        working-directory: mobile
+        run: |
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+          flutter analyze
+      - name: Dashboard — deps + analyze
+        working-directory: dashboard
+        run: |
+          flutter pub get
+          flutter analyze

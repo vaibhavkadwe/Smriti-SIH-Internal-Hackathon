@@ -1,0 +1,480 @@
+"""Game API Routes — Match It, Routine Sequencing, and Adaptive Difficulty.
+
+Endpoints:
+  POST /games/sessions — start a new game
+  POST /games/sessions/{session_id}/actions — record an action
+  POST /games/sessions/{session_id}/complete — finish and compute metrics
+  GET /games/sessions/{session_id} — retrieve session summary
+  GET /patients/{patient_id}/games/history — trend data for dashboard
+  GET /games/content-packs — list available content packs
+  GET /games/content-packs/{pack_id}/board — generate Match It board
+  POST /patients/{patient_id}/routine — set custom daily routine
+  GET /patients/{patient_id}/routine — get patient's routine
+  GET /routine/board — generate sequencing puzzle
+"""
+from typing import Optional
+from uuid import UUID
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel
+
+from sqlalchemy import select
+from app.core.security import require_role
+from app.deps import (
+    get_current_user,
+    ensure_consent,
+    ensure_clinical_access,
+    ensure_patient_access,
+)
+from app.db import get_db
+from app.models.all_models import GameTypeEnum, PatientProfile, GameSession
+from app.models.user import User
+from app.services import game_service, difficulty_engine, routine_service, content_packs
+
+router = APIRouter(prefix="/games", tags=["games"])
+
+
+# ============= Role dependencies =============
+require_patient = require_role("patient")
+require_caregiver = require_role("family_caregiver", "asha_worker")
+require_staff = require_role("family_caregiver", "asha_worker", "clinician")
+require_viewer = require_role("patient", "family_caregiver", "asha_worker", "clinician")
+require_admin = require_role("admin")
+
+
+async def _ensure_owned_session(
+    db: AsyncSession, current_user: User, session_id: UUID
+) -> GameSession:
+    """No-implicit-access for game sessions: a patient may only record actions
+    on / complete a session bound to their OWN patient profile. Prevents a
+    logged-in patient from mutating another patient's session by guessing its id.
+    """
+    res = await db.execute(select(GameSession).where(GameSession.id == session_id))
+    session = res.scalar_one_or_none()
+    if session is None:
+        raise HTTPException(status_code=404, detail="Game session not found")
+    pres = await db.execute(
+        select(PatientProfile).where(PatientProfile.user_id == current_user.id)
+    )
+    patient = pres.scalar_one_or_none()
+    if patient is None or session.patient_id != patient.id:
+        raise HTTPException(
+            status_code=403, detail="Game session does not belong to this account"
+        )
+    return session
+
+
+# ============= Schemas =============
+
+
+class StartGameRequest(BaseModel):
+    """Start a new game session."""
+    game_type: str  # "match_it" or "routine_sequencing"
+    difficulty_level: int = 1
+    content_pack_id: Optional[str] = None  # For Match It
+    routine_id: Optional[str] = None  # For Routine Sequencing
+
+
+class RecordActionRequest(BaseModel):
+    """Record a single player action."""
+    action_type: str
+    action_data: dict
+    is_correct: Optional[bool] = None
+    response_time_ms: Optional[int] = None
+
+
+class SessionSummaryResponse(BaseModel):
+    """Completed game session summary."""
+    session_id: UUID
+    game_type: str
+    difficulty_level: int
+    total_attempts: int
+    correct_count: int
+    incorrect_count: int
+    accuracy_pct: float
+    avg_response_time_ms: float
+    started_at: str
+    completed_at: str
+
+
+class GameHistoryItem(BaseModel):
+    """Single session from patient history."""
+    session_id: UUID
+    game_type: str
+    difficulty_level: int
+    accuracy_pct: float
+    avg_response_time_ms: float
+    completed_at: Optional[str]
+
+
+class ContentPackSummary(BaseModel):
+    """Metadata for a content pack."""
+    id: str
+    name: str
+    region: str
+    description: str
+    item_count: int
+
+
+class MatchItBoardResponse(BaseModel):
+    """Generated Match It board configuration."""
+    pack_id: str
+    pack_name: str
+    difficulty_level: int
+    pair_count: int
+    total_cards: int
+    cards: list
+
+
+class RoutineStep(BaseModel):
+    """A single step in a patient's daily routine."""
+    step_id: str
+    order: int
+    time: str
+    title_en: str
+    title_as: Optional[str] = None
+    title_bn: Optional[str] = None
+    title_hi: Optional[str] = None
+    icon: Optional[str] = None
+    hint: Optional[str] = None
+
+
+class UpdateRoutineRequest(BaseModel):
+    """Update patient's custom routine."""
+    steps: list[RoutineStep]
+
+
+class RoutineSequencingBoardResponse(BaseModel):
+    """Generated routine sequencing puzzle."""
+    difficulty_level: int
+    step_count: int
+    has_hints: bool
+    has_icons: bool
+    shuffled_items: list
+    correct_sequence: list[str]
+
+
+class DifficultyEvaluationResponse(BaseModel):
+    """Difficulty adjustment recommendation."""
+    new_difficulty: Optional[int]
+    reason: str
+    rule_triggered: Optional[str]
+    recent_sessions_reviewed: int
+
+
+# ============= Endpoints =============
+
+
+@router.post("/sessions", response_model=dict)
+async def start_game(
+    request: StartGameRequest,
+    current_user: User = Depends(require_patient),
+    db: AsyncSession = Depends(get_db),
+):
+    """Start a new game session for the patient profile bound to this account."""
+    res = await db.execute(
+        select(PatientProfile).where(PatientProfile.user_id == current_user.id)
+    )
+    patient = res.scalar_one_or_none()
+    if patient is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No patient profile linked to this account. Create one via POST /patients first.",
+        )
+    patient_id = patient.id
+    await ensure_consent(db, patient_id, "game_data")
+
+    game_type = GameTypeEnum(request.game_type)
+    session = await game_service.start_game_session(
+        db,
+        patient_id=patient_id,
+        game_type=game_type,
+        difficulty_level=request.difficulty_level,
+        content_pack_id=request.content_pack_id,
+        routine_id=request.routine_id,
+    )
+    # Snapshot values, then commit: start_game_session only flushes, and reading
+    # ORM attributes after commit requires expire_on_commit=False.
+    session_id = str(session.id)
+    started_at = session.started_at.isoformat()
+    await db.commit()
+
+    return {
+        "session_id": session_id,
+        "started_at": started_at,
+    }
+
+
+@router.post("/sessions/{session_id}/actions", response_model=dict)
+async def record_action(
+    session_id: str,
+    request: RecordActionRequest,
+    current_user: User = Depends(require_patient),
+    db: AsyncSession = Depends(get_db),
+):
+    """Record a player action within a game session."""
+    await _ensure_owned_session(db, current_user, UUID(session_id))
+    event = await game_service.record_game_action(
+        db,
+        session_id=UUID(session_id),
+        action_type=request.action_type,
+        action_data=request.action_data,
+        is_correct=request.is_correct,
+        response_time_ms=request.response_time_ms,
+    )
+    await db.commit()  # record_game_action only flushes; persist before returning
+
+    return {"status": "recorded", "event": event}
+
+
+@router.post("/sessions/{session_id}/complete", response_model=SessionSummaryResponse)
+async def complete_game(
+    session_id: str,
+    current_user: User = Depends(require_patient),
+    db: AsyncSession = Depends(get_db),
+):
+    """Complete a game session and compute final metrics."""
+    await _ensure_owned_session(db, current_user, UUID(session_id))
+    summary = await game_service.complete_game_session(db, session_id=UUID(session_id))
+    return SessionSummaryResponse(**summary)
+
+
+@router.get("/sessions/{session_id}", response_model=dict)
+async def get_session(
+    session_id: str,
+    current_user: User = Depends(require_viewer),
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve a game session summary. Access is enforced and audited."""
+    from app.deps import ensure_patient_access
+    from app.services.compliance_service import ComplianceService
+
+    session_summary = await game_service.get_session_summary(
+        db, session_id=UUID(session_id)
+    )
+    if session_summary.get("patient_id"):
+        await ensure_patient_access(db, current_user, session_summary["patient_id"])
+        await ComplianceService.log_read_access(
+            db, current_user.id, "game_session", session_id)
+    return session_summary
+
+
+@router.get("/patients/{patient_id}/history", response_model=list[GameHistoryItem])
+async def get_patient_history(
+    patient_id: str,
+    game_type: Optional[str] = None,
+    limit: int = 10,
+    current_user: User = Depends(require_staff),
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve game history for a patient (clinical-tier view). Audited."""
+    from app.services.compliance_service import ComplianceService
+
+    await ensure_clinical_access(db, current_user, UUID(patient_id))
+    await ensure_consent(db, UUID(patient_id), "game_data")
+    await ComplianceService.log_read_access(db, current_user.id, "game_history", patient_id)
+    gt = GameTypeEnum(game_type) if game_type else None
+    history = await game_service.get_patient_game_history(
+        db, patient_id=UUID(patient_id), game_type=gt, limit=limit
+    )
+    return [GameHistoryItem(**item) for item in history]
+
+
+@router.get("/patients/{patient_id}/stats")
+async def get_patient_stats(
+    patient_id: str,
+    days: int = 14,
+    current_user: User = Depends(require_staff),
+    db: AsyncSession = Depends(get_db),
+):
+    """Accuracy + response-time trends across both games (clinical-tier view).
+
+    Aggregates completed sessions per day: overall accuracy, average response
+    time, sessions played. Audited read.
+    """
+    from datetime import timedelta, datetime, timezone
+    from collections import defaultdict
+    from app.services.compliance_service import ComplianceService
+
+    pid = UUID(patient_id)
+    await ensure_clinical_access(db, current_user, pid)
+    await ensure_consent(db, pid, "game_data")
+    await ComplianceService.log_read_access(db, current_user.id, "game_stats", pid)
+
+    days = max(1, min(days, 90))
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    stmt = (
+        select(GameSession)
+        .where(GameSession.patient_id == pid, GameSession.started_at >= since)
+        .order_by(GameSession.started_at.asc())
+    )
+    sessions = (await db.execute(stmt)).scalars().all()
+
+    by_day: dict = defaultdict(lambda: {"attempts": 0, "correct": 0, "times": [], "games": 0})
+    for s in sessions:
+        day = (s.started_at if s.started_at.tzinfo else s.started_at.replace(
+            tzinfo=timezone.utc)).astimezone(timezone.utc).date().isoformat()
+        d = by_day[day]
+        d["attempts"] += s.attempts or 0
+        d["correct"] += s.correct_count or 0
+        if s.avg_response_time_ms is not None:
+            d["times"].append(s.avg_response_time_ms)
+        d["games"] += 1
+
+    trend = []
+    prev_accuracy = None
+    for day in sorted(by_day):
+        d = by_day[day]
+        accuracy = round(d["correct"] / d["attempts"] * 100.0, 1) if d["attempts"] else None
+        entry = {
+            "date": day,
+            "games": d["games"],
+            "accuracy_pct": accuracy,
+            "avg_response_time_ms": round(sum(d["times"]) / len(d["times"]), 1)
+            if d["times"] else None,
+        }
+        if accuracy is not None and prev_accuracy is not None:
+            entry["accuracy_delta_pct"] = round(accuracy - prev_accuracy, 1)
+        if accuracy is not None:
+            prev_accuracy = accuracy
+        trend.append(entry)
+
+    total_attempts = sum(d["attempts"] for d in by_day.values())
+    total_correct = sum(d["correct"] for d in by_day.values())
+    all_times = [t for d in by_day.values() for t in d["times"]]
+    return {
+        "patient_id": str(pid),
+        "window_days": days,
+        "overall": {
+            "sessions": len(sessions),
+            "accuracy_pct": round(total_correct / total_attempts * 100.0, 1)
+            if total_attempts else None,
+            "avg_response_time_ms": round(sum(all_times) / len(all_times), 1)
+            if all_times else None,
+        },
+        "trend": trend,
+    }
+
+
+@router.get("/content-packs", response_model=list[ContentPackSummary])
+async def list_content_packs(current_user: User = Depends(get_current_user)):
+    """List available content packs for Match It."""
+    packs = content_packs.list_content_packs()
+    return [ContentPackSummary(**pack) for pack in packs]
+
+
+@router.get("/content-packs/{pack_id}/board", response_model=MatchItBoardResponse)
+async def generate_match_it_board(
+    pack_id: str,
+    difficulty_level: int = 1,
+    current_user: User = Depends(get_current_user),
+):
+    """Generate a randomized Match It board."""
+    board = content_packs.generate_match_it_board(
+        pack_id=pack_id, difficulty_level=difficulty_level
+    )
+    return MatchItBoardResponse(**board)
+
+
+class ContentItemIn(BaseModel):
+    id: str
+    name_en: str
+    name_as: str = ""
+    name_bn: str = ""
+    name_hi: str = ""
+    category: str = ""
+    image_url: str = ""
+
+
+class ContentPackCreate(BaseModel):
+    id: str
+    name: str
+    region: str = "North East India"
+    description: str = ""
+    items: list[ContentItemIn]
+
+
+@router.post("/content-packs", response_model=ContentPackSummary, status_code=201)
+async def create_content_pack(
+    body: ContentPackCreate,
+    current_user: User = Depends(require_admin),
+):
+    """Admin: register a new Match It themed set (seedable, not hardcoded)."""
+    pack = content_packs.register_content_pack(
+        pack_id=body.id,
+        name=body.name,
+        region=body.region,
+        description=body.description,
+        items=[item.model_dump() for item in body.items],
+    )
+    return ContentPackSummary(
+        id=pack.id,
+        name=pack.name,
+        region=pack.region,
+        description=pack.description,
+        item_count=len(pack.items),
+    )
+
+
+@router.post("/patients/{patient_id}/routine")
+async def update_patient_routine(
+    patient_id: str,
+    request: UpdateRoutineRequest,
+    current_user: User = Depends(require_caregiver),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update patient's custom daily routine (caregiver editor)."""
+    await ensure_patient_access(db, current_user, UUID(patient_id))
+    steps = [s.model_dump() for s in request.steps]
+    updated = await routine_service.update_patient_routine(
+        db, patient_id=UUID(patient_id), steps=steps
+    )
+    return {"status": "updated", "steps": updated}
+
+
+@router.get("/patients/{patient_id}/routine")
+async def get_patient_routine(
+    patient_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve patient's daily routine."""
+    routine = await routine_service.get_patient_routine(
+        db, patient_id=UUID(patient_id)
+    )
+    return {"routine": routine}
+
+
+@router.get("/routine/board", response_model=RoutineSequencingBoardResponse)
+async def generate_routine_board(
+    patient_id: str,
+    difficulty_level: int = 1,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate a routine sequencing puzzle for a patient."""
+    routine = await routine_service.get_patient_routine(
+        db, patient_id=UUID(patient_id)
+    )
+    board = routine_service.generate_routine_sequencing_board(
+        routine, difficulty_level=difficulty_level
+    )
+    return RoutineSequencingBoardResponse(**board)
+
+
+@router.post("/difficulty/evaluate", response_model=DifficultyEvaluationResponse)
+async def evaluate_difficulty(
+    patient_id: str,
+    game_type: str,
+    current_difficulty: int,
+    current_user: User = Depends(require_staff),
+    db: AsyncSession = Depends(get_db),
+):
+    """Evaluate if difficulty should adjust for a patient."""
+    evaluation = await difficulty_engine.evaluate_difficulty(
+        db,
+        patient_id=UUID(patient_id),
+        game_type=GameTypeEnum(game_type),
+        current_difficulty=current_difficulty,
+    )
+    return DifficultyEvaluationResponse(**evaluation)

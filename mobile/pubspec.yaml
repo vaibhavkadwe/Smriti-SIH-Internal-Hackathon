@@ -1,0 +1,42 @@
+name: eldercare_mobile
+description: Elder-Care Cognitive Companion — Patient Mobile App
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.10.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Offline-first storage (drift/SQLite) & scheduling
+  drift: ^2.14.0
+  sqlite3_flutter_libs: ^0.5.18
+  path_provider: ^2.1.1
+  path: ^1.8.3
+  flutter_local_notifications: ^16.3.0
+  timezone: ^0.9.2
+
+  # Networking, state & persistence
+  http: ^1.1.0
+  shared_preferences: ^2.2.2
+
+  # UI
+  intl: ^0.20.2   # must match the version flutter_localizations pins
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  drift_dev: ^2.14.0
+  build_runner: ^2.4.7
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/match_it/
+    - assets/audio/
