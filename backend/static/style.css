@@ -1,0 +1,669 @@
+/* ==========================================================================
+   Smriti Elder-Care Companion — Pure Vanilla CSS (Warm Palette System)
+   Designed for high legibility, accessibility, and strict constraint adherence.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Warm Color Palette */
+  --bg-main: #FBF8F3;
+  --bg-surface: #FFFDF9;
+  --bg-subtle: #F4EFE6;
+  --bg-highlight: #EFE7DA;
+  
+  --border-color: #E6DFC5;
+  --border-dark: #CFC5A9;
+  
+  --text-primary: #2C2621;
+  --text-secondary: #635A4F;
+  --text-muted: #877D70;
+
+  --accent-primary: #C85A32; /* Warm Terracotta */
+  --accent-primary-hover: #B04A25;
+  --accent-secondary: #567D65; /* Warm Sage */
+  --accent-secondary-hover: #466753;
+  --accent-warn: #C27D28; /* Warm Amber */
+  --accent-warn-bg: #FDF4E7;
+  --accent-danger: #B83A2A;
+  --accent-danger-bg: #FDF0EE;
+
+  /* Typography */
+  --font-serif: 'Lora', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+
+  /* Sizes */
+  --radius-strict: 4px;
+}
+
+/* Reset & Global Base */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-shadow: none !important; /* Strict exclusion: NO drop shadows */
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Top App Header */
+.app-header {
+  background-color: var(--bg-surface);
+  border-bottom: 2px solid var(--border-color);
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.brand-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo-icon {
+  width: 36px;
+  height: 36px;
+  background-color: var(--accent-primary);
+  color: #FFFDF9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-strict);
+  font-weight: 700;
+  font-family: var(--font-serif);
+  font-size: 20px;
+}
+
+.brand-title {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.brand-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* Header Controls */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.view-mode-toggle {
+  display: flex;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-strict);
+  padding: 3px;
+}
+
+.toggle-btn {
+  border: none;
+  background: transparent;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-strict);
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.toggle-btn.active {
+  background-color: var(--accent-primary);
+  color: #FFFDF9;
+}
+
+.lang-select {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-strict);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.user-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 12px;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-strict);
+}
+
+.btn-secondary {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 8px 16px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: var(--radius-strict);
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-highlight);
+  border-color: var(--border-dark);
+}
+
+/* Layout Main Container */
+.main-wrapper {
+  max-width: 1100px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+/* Patient Mode Styles — Large Fonts & Ease of Access */
+.patient-view {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.patient-welcome-card {
+  background-color: var(--bg-surface);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-strict);
+  padding: 24px;
+}
+
+.patient-title {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.patient-subtext {
+  font-size: 20px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Ease of Access Big Buttons */
+.access-buttons-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.access-btn {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background-color: var(--bg-surface);
+  border: 3px solid var(--border-color);
+  border-radius: var(--radius-strict);
+  padding: 20px 24px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.access-btn:hover, .access-btn:focus {
+  border-color: var(--accent-primary);
+  background-color: var(--bg-subtle);
+  outline: none;
+}
+
+.access-btn-icon {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  background-color: var(--bg-highlight);
+  border: 2px solid var(--border-dark);
+  border-radius: var(--radius-strict);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+}
+
+.access-btn-text-main {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+.access-btn-text-sub {
+  font-size: 18px;
+  color: var(--text-secondary);
+}
+
+/* Patient Interactive Panel Container */
+.patient-panel {
+  background-color: var(--bg-surface);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-strict);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--bg-subtle);
+  padding-bottom: 12px;
+}
+
+.panel-title {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Match-It Memory Cards Grid */
+.cards-game-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 12px;
+}
+
+@media (max-width: 600px) {
+  .cards-game-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.game-card {
+  height: 110px;
+  background-color: var(--bg-subtle);
+  border: 3px solid var(--border-color);
+  border-radius: var(--radius-strict);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.1s, border-color 0.15s, background-color 0.15s;
+}
+
+.game-card.flipped {
+  background-color: var(--bg-surface);
+  border-color: var(--accent-primary);
+}
+
+.game-card.matched {
+  background-color: var(--accent-warn-bg);
+  border-color: var(--accent-secondary);
+  color: var(--accent-secondary);
+}
+
+.game-score-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--bg-subtle);
+  padding: 14px 20px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-strict);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Patient Reminders List */
+.reminders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reminder-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--bg-subtle);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-strict);
+  padding: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.reminder-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.reminder-time {
+  font-size: 18px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.btn-large-action {
+  background-color: var(--accent-secondary);
+  color: #FFFDF9;
+  border: none;
+  padding: 16px 28px;
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  border-radius: var(--radius-strict);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.btn-large-action:hover {
+  background-color: var(--accent-secondary-hover);
+}
+
+.btn-large-action.completed {
+  background-color: var(--bg-highlight);
+  color: var(--text-muted);
+  cursor: default;
+  border: 2px solid var(--border-dark);
+}
+
+/* Patient Voice Companion Chat */
+.chat-box {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 12px;
+  background-color: var(--bg-subtle);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-strict);
+}
+
+.chat-bubble {
+  padding: 16px 20px;
+  border-radius: var(--radius-strict);
+  font-size: 20px;
+  line-height: 1.5;
+  max-width: 85%;
+}
+
+.chat-bubble.bot {
+  background-color: var(--bg-surface);
+  border: 2px solid var(--border-color);
+  color: var(--text-primary);
+  align-self: flex-start;
+}
+
+.chat-bubble.user {
+  background-color: var(--accent-primary);
+  color: #FFFDF9;
+  align-self: flex-end;
+}
+
+.chat-input-bar {
+  display: flex;
+  gap: 12px;
+}
+
+.chat-input-field {
+  flex: 1;
+  padding: 16px 20px;
+  font-size: 20px;
+  font-family: var(--font-sans);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-strict);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.chat-input-field:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+/* Caregiver Dashboard Mode */
+.caregiver-view {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.section-card {
+  background-color: var(--bg-surface);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-strict);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-title-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--bg-subtle);
+  padding-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.section-h2 {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Caregiver Login Card */
+.auth-card {
+  max-width: 480px;
+  margin: 40px auto;
+  width: 100%;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.form-control {
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: var(--font-sans);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-strict);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.btn-primary {
+  background-color: var(--accent-primary);
+  color: #FFFDF9;
+  border: none;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border-radius: var(--radius-strict);
+  transition: background-color 0.15s;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-primary-hover);
+}
+
+.demo-shortcut-bar {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.btn-shortcut {
+  flex: 1;
+  padding: 8px;
+  font-size: 13px;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-strict);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-shortcut:hover {
+  background-color: var(--bg-highlight);
+  color: var(--text-primary);
+}
+
+/* Metric Display Panels (Non-bento, Stacked/Structured Key-Value Grid) */
+.metrics-summary-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-strict);
+  padding: 16px 20px;
+}
+
+.metric-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.metric-val {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: var(--font-serif);
+  color: var(--text-primary);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: var(--radius-strict);
+  border: 1px solid currentColor;
+}
+
+.status-badge.good {
+  background-color: #EBF4EF;
+  color: var(--accent-secondary);
+}
+
+.status-badge.warn {
+  background-color: var(--accent-warn-bg);
+  color: var(--accent-warn);
+}
+
+.status-badge.danger {
+  background-color: var(--accent-danger-bg);
+  color: var(--accent-danger);
+}
+
+/* Caregiver Data Tables */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.data-table th {
+  background-color: var(--bg-subtle);
+  border-bottom: 2px solid var(--border-color);
+  padding: 12px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.data-table td {
+  border-bottom: 1px solid var(--border-color);
+  padding: 12px;
+  color: var(--text-secondary);
+}
+
+.data-table tr:hover td {
+  background-color: var(--bg-subtle);
+}
+
+/* RAG Search Container */
+.search-input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.rag-response-box {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-strict);
+  padding: 16px;
+  font-size: 15px;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* Utility Helpers */
+.hidden {
+  display: none !important;
+}
+
+.text-warn {
+  color: var(--accent-warn);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}

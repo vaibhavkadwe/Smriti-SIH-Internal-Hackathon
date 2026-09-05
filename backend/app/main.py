@@ -54,6 +54,31 @@ app.add_middleware(
 )
 
 
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+_STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+if os.path.exists(_STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
+
+
+@app.get("/")
+async def root():
+    """Serve single-page application UI at root URL."""
+    index_path = os.path.join(_STATIC_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {
+        "service": settings.PROJECT_NAME,
+        "version": settings.PROJECT_VERSION,
+        "docs": "/docs",
+        "health": "/health",
+        "api_v1": settings.API_V1_STR,
+    }
+
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint for load balancers."""
@@ -63,6 +88,7 @@ async def health_check():
         "version": settings.PROJECT_VERSION,
         "environment": settings.ENVIRONMENT,
     }
+
 
 
 app.include_router(auth_router, prefix=settings.API_V1_STR)
