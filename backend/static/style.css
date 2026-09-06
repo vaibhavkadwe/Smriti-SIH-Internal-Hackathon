@@ -1,669 +1,685 @@
 /* ==========================================================================
-   Smriti Elder-Care Companion — Pure Vanilla CSS (Warm Palette System)
-   Designed for high legibility, accessibility, and strict constraint adherence.
+   Smriti Elder-Care Mobile App — Flutter Experience (Warm Contrast System)
+   Theme: Assam Tea Green (#1E5E3A) & Brahmaputra Teal Blue (#1B4D5C)
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* Warm Color Palette */
-  --bg-main: #FBF8F3;
-  --bg-surface: #FFFDF9;
-  --bg-subtle: #F4EFE6;
-  --bg-highlight: #EFE7DA;
+  /* Warm Green & Blue Contrast Palette */
+  --color-green-primary: #1E5E3A;   /* Assam Tea Green */
+  --color-green-light: #287A4B;
+  --color-green-bg: #EAF4EE;
   
-  --border-color: #E6DFC5;
-  --border-dark: #CFC5A9;
+  --color-blue-primary: #1B4D5C;    /* Brahmaputra Teal Blue */
+  --color-blue-light: #2B7285;
+  --color-blue-bg: #EBF4F6;
   
-  --text-primary: #2C2621;
-  --text-secondary: #635A4F;
-  --text-muted: #877D70;
+  --color-accent-gold: #C28020;     /* Assamese Silk/Jaapi Gold */
+  --color-accent-gold-bg: #FCF5E8;
 
-  --accent-primary: #C85A32; /* Warm Terracotta */
-  --accent-primary-hover: #B04A25;
-  --accent-secondary: #567D65; /* Warm Sage */
-  --accent-secondary-hover: #466753;
-  --accent-warn: #C27D28; /* Warm Amber */
-  --accent-warn-bg: #FDF4E7;
-  --accent-danger: #B83A2A;
-  --accent-danger-bg: #FDF0EE;
+  --color-danger: #D9534F;
+  --color-danger-bg: #FDF0EE;
 
-  /* Typography */
+  /* Neutral Warm Canvas */
+  --bg-page: #F4EFE6;               /* Warm parchment page background */
+  --bg-mobile-frame: #FBF9F5;       /* Warm device background */
+  --bg-card: #FFFFFF;
+  
+  --border-subtle: #E2DAC9;
+  --border-strong: #C4B8A2;
+
+  --text-main: #1C2621;
+  --text-sub: #526157;
+  --text-muted: #828F86;
+
+  /* Fonts */
   --font-serif: 'Lora', Georgia, serif;
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 
-  /* Sizes */
-  --radius-strict: 4px;
+  --radius-app: 12px;
+  --radius-btn: 10px;
 }
 
-/* Reset & Global Base */
+/* Reset & Setup */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-shadow: none !important; /* Strict exclusion: NO drop shadows */
+  box-shadow: none !important;
 }
 
 body {
-  background-color: var(--bg-main);
-  color: var(--text-primary);
+  background-color: var(--bg-page);
+  color: var(--text-main);
   font-family: var(--font-sans);
-  line-height: 1.6;
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Top App Header */
-.app-header {
-  background-color: var(--bg-surface);
-  border-bottom: 2px solid var(--border-color);
-  padding: 16px 24px;
+  min-height: 100vh;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.brand-container {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.brand-logo-icon {
-  width: 36px;
-  height: 36px;
-  background-color: var(--accent-primary);
-  color: #FFFDF9;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  border-radius: var(--radius-strict);
-  font-weight: 700;
-  font-family: var(--font-serif);
-  font-size: 20px;
-}
-
-.brand-title {
-  font-family: var(--font-serif);
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.brand-subtitle {
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-/* Header Controls */
-.header-actions {
-  display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  padding: 20px 10px;
+  line-height: 1.5;
 }
 
-.view-mode-toggle {
-  display: flex;
-  background-color: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-strict);
-  padding: 3px;
-}
-
-.toggle-btn {
-  border: none;
-  background: transparent;
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: var(--font-sans);
-  color: var(--text-secondary);
-  cursor: pointer;
-  border-radius: var(--radius-strict);
-  transition: background-color 0.15s, color 0.15s;
-}
-
-.toggle-btn.active {
-  background-color: var(--accent-primary);
-  color: #FFFDF9;
-}
-
-.lang-select {
-  padding: 8px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-strict);
-  background-color: var(--bg-surface);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.user-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 6px 12px;
-  background-color: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-strict);
-}
-
-.btn-secondary {
-  background-color: var(--bg-subtle);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  padding: 8px 16px;
-  font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  border-radius: var(--radius-strict);
-}
-
-.btn-secondary:hover {
-  background-color: var(--bg-highlight);
-  border-color: var(--border-dark);
-}
-
-/* Layout Main Container */
-.main-wrapper {
-  max-width: 1100px;
-  margin: 24px auto;
-  padding: 0 16px;
-}
-
-/* Patient Mode Styles — Large Fonts & Ease of Access */
-.patient-view {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.patient-welcome-card {
-  background-color: var(--bg-surface);
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-strict);
-  padding: 24px;
-}
-
-.patient-title {
-  font-family: var(--font-serif);
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 8px;
-}
-
-.patient-subtext {
-  font-size: 20px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-/* Ease of Access Big Buttons */
-.access-buttons-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.access-btn {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  background-color: var(--bg-surface);
-  border: 3px solid var(--border-color);
-  border-radius: var(--radius-strict);
-  padding: 20px 24px;
-  cursor: pointer;
-  text-align: left;
+/* Flutter Mobile App Frame Wrapper */
+.phone-simulator-frame {
   width: 100%;
-  transition: border-color 0.15s, background-color 0.15s;
-}
-
-.access-btn:hover, .access-btn:focus {
-  border-color: var(--accent-primary);
-  background-color: var(--bg-subtle);
-  outline: none;
-}
-
-.access-btn-icon {
-  width: 52px;
-  height: 52px;
-  min-width: 52px;
-  background-color: var(--bg-highlight);
-  border: 2px solid var(--border-dark);
-  border-radius: var(--radius-strict);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--accent-primary);
-}
-
-.access-btn-text-main {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-}
-
-.access-btn-text-sub {
-  font-size: 18px;
-  color: var(--text-secondary);
-}
-
-/* Patient Interactive Panel Container */
-.patient-panel {
-  background-color: var(--bg-surface);
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-strict);
-  padding: 24px;
+  max-width: 440px;
+  height: 880px;
+  max-height: 92vh;
+  background-color: var(--bg-mobile-frame);
+  border: 4px solid var(--border-strong);
+  border-radius: 36px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  overflow: hidden;
+  position: relative;
 }
 
-.panel-header {
+/* Mobile Status Bar */
+.mobile-status-bar {
+  background-color: var(--color-green-primary);
+  color: #FFFFFF;
+  padding: 10px 20px 4px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 2px solid var(--bg-subtle);
-  padding-bottom: 12px;
-}
-
-.panel-title {
-  font-family: var(--font-serif);
-  font-size: 26px;
+  font-size: 13px;
   font-weight: 700;
-  color: var(--text-primary);
+  letter-spacing: 0.5px;
 }
 
-/* Match-It Memory Cards Grid */
-.cards-game-container {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+.status-notch {
+  width: 90px;
+  height: 14px;
+  background-color: #123D25;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+/* Flutter App Header Bar */
+.flutter-app-bar {
+  background-color: var(--color-green-primary);
+  color: #FFFFFF;
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #14442A;
+}
+
+.app-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-logo-badge {
+  width: 34px;
+  height: 34px;
+  background-color: var(--color-accent-gold);
+  color: #FFFFFF;
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 20px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-name {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.app-tagline {
+  font-size: 11px;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.lang-picker-sm {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #FFFFFF;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+.lang-picker-sm option {
+  background-color: var(--color-green-primary);
+  color: #FFFFFF;
+}
+
+/* App Body Scroll Container */
+.flutter-body-viewport {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  margin-top: 12px;
+  scroll-behavior: smooth;
 }
 
-@media (max-width: 600px) {
-  .cards-game-container {
-    grid-template-columns: repeat(2, 1fr);
+/* Tab Slide Animations */
+.animate-tab-in {
+  animation: slideFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.game-card {
-  height: 110px;
-  background-color: var(--bg-subtle);
-  border: 3px solid var(--border-color);
-  border-radius: var(--radius-strict);
+/* Greeting Card */
+.patient-greeting-card {
+  background-color: var(--color-green-bg);
+  border: 2px solid var(--color-green-light);
+  border-radius: var(--radius-app);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.greeting-text-lg {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-green-primary);
+}
+
+.greeting-sub-lg {
+  font-size: 18px;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+/* Ease Cards */
+.ease-card {
+  background-color: var(--bg-card);
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-app);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.ease-card:active {
+  transform: scale(0.97);
+  background-color: var(--color-green-bg);
+  border-color: var(--color-green-primary);
+}
+
+.ease-icon-box {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.ease-icon-box.green {
+  background-color: var(--color-green-bg);
+  border: 2px solid var(--color-green-light);
+  color: var(--color-green-primary);
+}
+
+.ease-icon-box.blue {
+  background-color: var(--color-blue-bg);
+  border: 2px solid var(--color-blue-light);
+  color: var(--color-blue-primary);
+}
+
+.ease-icon-box.gold {
+  background-color: var(--color-accent-gold-bg);
+  border: 2px solid var(--color-accent-gold);
+  color: var(--color-accent-gold);
+}
+
+.ease-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.ease-desc {
+  font-size: 16px;
+  color: var(--text-sub);
+}
+
+/* Games Menu */
+.games-menu-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.game-menu-card {
+  background-color: var(--bg-card);
+  border: 2px solid var(--color-blue-light);
+  border-radius: var(--radius-app);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.15s ease;
+}
+
+.game-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.game-badge {
+  background-color: var(--color-blue-bg);
+  color: var(--color-blue-primary);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  align-self: flex-start;
+}
+
+.btn-start-game {
+  background-color: var(--color-green-primary);
+  color: #FFFFFF;
+  border: none;
+  padding: 14px 20px;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: var(--radius-btn);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-start-game:active {
+  transform: scale(0.98);
+  background-color: var(--color-green-light);
+}
+
+/* Match-It Game Grid & 3D Cards */
+.game-status-bar {
+  display: flex;
+  justify-content: space-around;
+  background-color: var(--color-blue-bg);
+  border: 2px solid var(--color-blue-light);
+  border-radius: var(--radius-app);
+  padding: 10px 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-blue-primary);
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cards-grid-3d {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+  perspective: 1000px;
+}
+
+.cards-grid-3d.grid-2x3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.cards-grid-3d.grid-2x4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.cards-grid-3d.grid-3x4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.card-flip-wrapper {
+  height: 120px;
+  position: relative;
+  cursor: pointer;
+  perspective: 1000px;
+}
+
+.cards-grid-3d.grid-3x4 .card-flip-wrapper {
+  height: 105px;
+}
+
+.card-flip-inner {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-app);
+}
+
+.card-flip-wrapper.flipped .card-flip-inner {
+  transform: rotateY(180deg);
+}
+
+.card-front, .card-back {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  backface-visibility: hidden;
+  border-radius: var(--radius-app);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
-  cursor: pointer;
-  user-select: none;
-  transition: transform 0.1s, border-color 0.15s, background-color 0.15s;
+  padding: 4px;
+  text-align: center;
 }
 
-.game-card.flipped {
-  background-color: var(--bg-surface);
-  border-color: var(--accent-primary);
+.card-front {
+  background-color: var(--color-green-bg);
+  border: 3px solid var(--color-green-primary);
+  color: var(--color-green-primary);
+  font-size: 26px;
+  font-weight: 800;
 }
 
-.game-card.matched {
-  background-color: var(--accent-warn-bg);
-  border-color: var(--accent-secondary);
-  color: var(--accent-secondary);
+.card-back {
+  background-color: #FFFFFF;
+  border: 3px solid var(--color-blue-primary);
+  transform: rotateY(180deg);
+  overflow: hidden;
 }
 
-.game-score-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: var(--bg-subtle);
-  padding: 14px 20px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-strict);
-  font-size: 20px;
-  font-weight: 700;
-}
-
-/* Patient Reminders List */
-.reminders-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.reminder-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: var(--bg-subtle);
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-strict);
-  padding: 20px;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.reminder-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.reminder-time {
-  font-size: 18px;
-  color: var(--text-secondary);
-  font-weight: 600;
-}
-
-.btn-large-action {
-  background-color: var(--accent-secondary);
-  color: #FFFDF9;
-  border: none;
-  padding: 16px 28px;
-  font-size: 20px;
-  font-weight: 700;
-  font-family: var(--font-sans);
-  border-radius: var(--radius-strict);
-  cursor: pointer;
-  transition: background-color 0.15s;
-}
-
-.btn-large-action:hover {
-  background-color: var(--accent-secondary-hover);
-}
-
-.btn-large-action.completed {
-  background-color: var(--bg-highlight);
-  color: var(--text-muted);
-  cursor: default;
-  border: 2px solid var(--border-dark);
-}
-
-/* Patient Voice Companion Chat */
-.chat-box {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-height: 380px;
-  overflow-y: auto;
-  padding: 12px;
-  background-color: var(--bg-subtle);
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-strict);
-}
-
-.chat-bubble {
-  padding: 16px 20px;
-  border-radius: var(--radius-strict);
-  font-size: 20px;
-  line-height: 1.5;
-  max-width: 85%;
-}
-
-.chat-bubble.bot {
-  background-color: var(--bg-surface);
-  border: 2px solid var(--border-color);
-  color: var(--text-primary);
-  align-self: flex-start;
-}
-
-.chat-bubble.user {
-  background-color: var(--accent-primary);
-  color: #FFFDF9;
-  align-self: flex-end;
-}
-
-.chat-input-bar {
-  display: flex;
-  gap: 12px;
-}
-
-.chat-input-field {
-  flex: 1;
-  padding: 16px 20px;
-  font-size: 20px;
-  font-family: var(--font-sans);
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-strict);
-  background-color: var(--bg-surface);
-  color: var(--text-primary);
-}
-
-.chat-input-field:focus {
-  outline: none;
-  border-color: var(--accent-primary);
-}
-
-/* Caregiver Dashboard Mode */
-.caregiver-view {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.section-card {
-  background-color: var(--bg-surface);
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-strict);
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.section-title-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 2px solid var(--bg-subtle);
-  padding-bottom: 12px;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.section-h2 {
-  font-family: var(--font-serif);
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-/* Caregiver Login Card */
-.auth-card {
-  max-width: 480px;
-  margin: 40px auto;
+.card-img-asset {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
 }
 
-.form-group {
+.card-emoji-backup {
+  font-size: 40px;
+}
+
+.card-flip-wrapper.matched .card-back {
+  border-color: var(--color-accent-gold);
+  background-color: var(--color-accent-gold-bg);
+  animation: matchPulse 0.4s ease-in-out;
+}
+
+@keyframes matchPulse {
+  0% { transform: rotateY(180deg) scale(1); }
+  50% { transform: rotateY(180deg) scale(1.08); }
+  100% { transform: rotateY(180deg) scale(1); }
+}
+
+/* Drag and Drop Routine Cards */
+.drag-step-card {
+  background-color: var(--bg-card);
+  border: 2px solid var(--color-blue-light);
+  border-radius: var(--radius-app);
+  padding: 16px 18px;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
+  align-items: center;
+  justify-content: space-between;
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.15s, background-color 0.15s, border-color 0.15s;
 }
 
-.form-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
+.drag-step-card:active {
+  cursor: grabbing;
 }
 
-.form-control {
-  padding: 12px 14px;
-  font-size: 15px;
-  font-family: var(--font-sans);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-strict);
-  background-color: var(--bg-surface);
-  color: var(--text-primary);
+.drag-step-card.dragging {
+  opacity: 0.4;
+  background-color: var(--color-blue-bg);
+  border-style: dashed;
 }
 
-.form-control:focus {
-  outline: none;
-  border-color: var(--accent-primary);
-}
-
-.btn-primary {
-  background-color: var(--accent-primary);
-  color: #FFFDF9;
-  border: none;
-  padding: 12px 20px;
-  font-size: 15px;
+.drag-step-text {
+  font-size: 18px;
   font-weight: 700;
-  font-family: var(--font-sans);
-  cursor: pointer;
-  border-radius: var(--radius-strict);
-  transition: background-color 0.15s;
-}
-
-.btn-primary:hover {
-  background-color: var(--accent-primary-hover);
-}
-
-.demo-shortcut-bar {
+  color: var(--text-main);
   display: flex;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.btn-shortcut {
-  flex: 1;
-  padding: 8px;
-  font-size: 13px;
-  background-color: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-strict);
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.btn-shortcut:hover {
-  background-color: var(--bg-highlight);
-  color: var(--text-primary);
-}
-
-/* Metric Display Panels (Non-bento, Stacked/Structured Key-Value Grid) */
-.metrics-summary-container {
-  display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 12px;
 }
 
-.metric-row {
+.drag-grip-icon {
+  font-size: 22px;
+  color: var(--color-blue-primary);
+  opacity: 0.7;
+}
+
+/* Reminders List & iOS/Flutter Toggle Switch */
+.reminder-mobile-card {
+  background-color: var(--bg-card);
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-app);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.reminder-mobile-card.overdue {
+  background-color: var(--color-danger-bg);
+  border-color: var(--color-danger);
+  animation: overduePulse 1.4s infinite alternate;
+}
+
+@keyframes overduePulse {
+  from { border-color: #D9534F; }
+  to { border-color: #B21F1C; }
+}
+
+.reminder-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-strict);
-  padding: 16px 20px;
 }
 
-.metric-label {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.metric-val {
-  font-size: 24px;
+.reminder-title-lg {
+  font-size: 19px;
   font-weight: 700;
-  font-family: var(--font-serif);
-  color: var(--text-primary);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.status-badge {
-  display: inline-block;
+.reminder-time-tag {
+  background-color: var(--color-accent-gold-bg);
+  color: var(--color-accent-gold);
+  font-weight: 700;
   padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.reminder-time-tag.overdue-tag {
+  background-color: var(--color-danger);
+  color: #FFFFFF;
+}
+
+.toggle-row-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  background-color: var(--bg-mobile-frame);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+}
+
+.toggle-status-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-sub);
+}
+
+.toggle-status-text.done {
+  color: var(--color-green-primary);
+}
+
+/* Flutter Toggle Switch */
+.flutter-toggle {
+  position: relative;
+  display: inline-block;
+  width: 58px;
+  height: 32px;
+}
+
+.flutter-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #C8BFAD;
+  transition: 0.3s;
+  border-radius: 32px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 24px;
+  width: 24px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: var(--color-green-primary);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(26px);
+}
+
+/* Voice Companion Wave */
+.voice-wave-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  margin-bottom: 8px;
+}
+
+.wave-bar {
+  width: 6px;
+  height: 12px;
+  background-color: var(--color-blue-primary);
+  border-radius: 3px;
+  animation: wavePulse 1.2s ease-in-out infinite alternate;
+}
+
+.wave-bar:nth-child(2) { animation-delay: 0.2s; height: 24px; }
+.wave-bar:nth-child(3) { animation-delay: 0.4s; height: 32px; }
+.wave-bar:nth-child(4) { animation-delay: 0.6s; height: 18px; }
+
+@keyframes wavePulse {
+  from { transform: scaleY(0.4); }
+  to { transform: scaleY(1.3); }
+}
+
+/* Mobile Bottom Nav */
+.flutter-bottom-nav {
+  background-color: #FFFFFF;
+  border-top: 2px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 4px 12px 4px;
+}
+
+.nav-item-btn {
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-sub);
   font-size: 12px;
   font-weight: 700;
-  border-radius: var(--radius-strict);
-  border: 1px solid currentColor;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  flex: 1;
+  transition: color 0.15s;
 }
 
-.status-badge.good {
-  background-color: #EBF4EF;
-  color: var(--accent-secondary);
+.nav-item-btn.active {
+  color: var(--color-green-primary);
 }
 
-.status-badge.warn {
-  background-color: var(--accent-warn-bg);
-  color: var(--accent-warn);
+.nav-item-btn.active .nav-icon {
+  background-color: var(--color-green-bg);
+  border-color: var(--color-green-light);
 }
 
-.status-badge.danger {
-  background-color: var(--accent-danger-bg);
-  color: var(--accent-danger);
-}
-
-/* Caregiver Data Tables */
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 8px;
-  font-size: 14px;
-}
-
-.data-table th {
-  background-color: var(--bg-subtle);
-  border-bottom: 2px solid var(--border-color);
-  padding: 12px;
-  text-align: left;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.data-table td {
-  border-bottom: 1px solid var(--border-color);
-  padding: 12px;
-  color: var(--text-secondary);
-}
-
-.data-table tr:hover td {
-  background-color: var(--bg-subtle);
-}
-
-/* RAG Search Container */
-.search-input-group {
+.nav-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
-  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  font-size: 18px;
 }
 
-.rag-response-box {
-  background-color: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-strict);
+/* Caregiver Mobile Styles */
+.caregiver-form-card {
+  background-color: var(--bg-card);
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-app);
   padding: 16px;
-  font-size: 15px;
-  color: var(--text-primary);
-  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-/* Utility Helpers */
+.metric-box-sm {
+  background-color: var(--color-blue-bg);
+  border: 1px solid var(--color-blue-light);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .hidden {
   display: none !important;
-}
-
-.text-warn {
-  color: var(--accent-warn);
-}
-
-.text-secondary {
-  color: var(--text-secondary);
 }

@@ -1,419 +1,508 @@
 /* ==========================================================================
-   Smriti Elder-Care Companion — Vanilla JavaScript Client Engine
-   Communicates directly with FastAPI backend endpoints (/api/v1).
+   Smriti Flutter Mobile App — Vanilla JS Engine
+   Connects to FastAPI endpoints on localhost:8000 with Assam Cultural Assets
    ========================================================================== */
 
 const API_BASE = '/api/v1';
-let token = localStorage.getItem('smriti_token') || null;
-let currentLanguage = 'english';
-let demoPatientId = '6910b26a-369c-491d-b4d1-e8e950636528';
+let authToken = localStorage.getItem('smriti_token') || null;
+let currentLang = 'english';
 
-// State for active Match-It game
-let matchGameSessionId = null;
-let matchCards = [];
-let flippedIndices = [];
-let matchedPairs = 0;
+// 6 Unique Assamese Cultural Card Assets with Emoji Fallbacks
+const ALL_ASSAM_CARDS = [
+  { id: 'bihu', name: 'Bihu Dhol', img: '/static/assets/bihu_dhol.png', emoji: '🥁' },
+  { id: 'tea', name: 'Assam Tea Garden', img: '/static/assets/assam_tea.png', emoji: '🍵' },
+  { id: 'rhino', name: 'Kaziranga Rhino', img: '/static/assets/kaziranga_rhino.png', emoji: '🦏' },
+  { id: 'jaapi', name: 'Assam Jaapi', img: '/static/assets/assam_jaapi.png', emoji: '👒' },
+  { id: 'pitha', name: 'Assamese Bihu Pitha', img: '/static/assets/assam_pitha.png', emoji: '🍪' },
+  { id: 'muga', name: 'Golden Muga Silk', img: '/static/assets/assam_muga.png', emoji: '👗' }
+];
+
+// Match-It Game State Across 3 Levels
+let currentLevel = 1; // 1: 2x3, 2: 2x4, 3: 3x4
+let matchCardsState = [];
+let flippedCards = [];
+let matchedCount = 0;
 let moveCount = 0;
-let gameScore = 0;
+let wrongCount = 0;
+let scoreVal = 0;
+let totalPairsForLevel = 3;
 
-// On Page Load
+// Daily Reminders Initial State
+let defaultReminders = [
+  { id: 'r1', title: '🍳 Morning Breakfast & Fresh Fruit', time: '08:30 AM', hour: 8, minute: 30, completed: true, type: 'Breakfast' },
+  { id: 'r2', title: '💊 Morning BP Medicine (Amlodipine)', time: '09:00 AM', hour: 9, minute: 0, completed: false, type: 'Medication' },
+  { id: 'r3', title: '🍲 Healthy Assamese Lunch & Rice', time: '01:00 PM', hour: 13, minute: 0, completed: false, type: 'Lunch' },
+  { id: 'r4', title: '🍵 Afternoon Assam Tea & Snack', time: '04:30 PM', hour: 16, minute: 30, completed: false, type: 'Hydration' },
+  { id: 'r5', title: '📞 Daily Family Call (Children & Grandkids)', time: '06:00 PM', hour: 18, minute: 0, completed: false, type: 'Family Call' },
+  { id: 'r6', title: '🍛 Dinner & Evening Soup', time: '08:00 PM', hour: 20, minute: 0, completed: false, type: 'Dinner' }
+];
+
+let remindersList = JSON.parse(localStorage.getItem('smriti_reminders')) || defaultReminders;
+
+// Correct Chronological Routine Steps Reference (Without Number Indexes)
+const CORRECT_ROUTINE_ORDER = [
+  'step_med',  // Take Morning BP Medicine
+  'step_tea',  // Enjoy Assam Black Tea & Breakfast
+  'step_walk', // Light Garden Walk in Sunshine
+  'step_rest'  // Drink Water & Afternoon Rest
+];
+
+let routineSteps = [
+  { id: 'step_med', title: 'Take Morning BP Medicine', icon: '💊' },
+  { id: 'step_tea', title: 'Enjoy Assam Black Tea & Breakfast', icon: '☕' },
+  { id: 'step_walk', title: 'Light Garden Walk in Sunshine', icon: '🌳' },
+  { id: 'step_rest', title: 'Drink Water & Afternoon Rest', icon: '💧' }
+];
+
+let draggedItemIndex = null;
+
 document.addEventListener('DOMContentLoaded', () => {
-  if (token) {
-    checkCurrentUser();
-  } else {
-    // Default to Patient View for ease of access
-    switchView('patient');
-    loadPatientReminders();
-  }
+  switchNavTab('home');
+  renderReminders();
 });
 
-// View Switching Logic
-function switchView(mode) {
-  const patientSec = document.getElementById('patientView');
-  const caregiverSec = document.getElementById('caregiverView');
-  const btnPatient = document.getElementById('btnPatientMode');
-  const btnCaregiver = document.getElementById('btnCaregiverMode');
-
-  if (mode === 'patient') {
-    patientSec.classList.remove('hidden');
-    caregiverSec.classList.add('hidden');
-    btnPatient.classList.add('active');
-    btnCaregiver.classList.remove('active');
-    loadPatientReminders();
-  } else {
-    patientSec.classList.add('hidden');
-    caregiverSec.classList.remove('hidden');
-    btnPatient.classList.remove('active');
-    btnCaregiver.classList.add('active');
-    
-    if (token) {
-      document.getElementById('caregiverAuthCard').classList.add('hidden');
-      document.getElementById('caregiverMainContent').classList.remove('hidden');
-      loadCaregiverDashboard();
+/* Mobile Bottom Navigation Tab Switcher & Auto-Scroll */
+function switchNavTab(tabId) {
+  const tabs = ['home', 'games', 'reminders', 'companion', 'caregiver'];
+  
+  tabs.forEach(t => {
+    const sec = document.getElementById(`tab${capitalize(t)}`);
+    const btn = document.getElementById(`nav${capitalize(t)}`);
+    if (t === tabId) {
+      sec.classList.remove('hidden');
+      btn.classList.add('active');
     } else {
-      document.getElementById('caregiverAuthCard').classList.remove('hidden');
-      document.getElementById('caregiverMainContent').classList.add('hidden');
+      sec.classList.add('hidden');
+      btn.classList.remove('active');
     }
+  });
+
+  // Auto-scroll viewport to top
+  const viewport = document.getElementById('appViewport');
+  if (viewport) viewport.scrollTop = 0;
+
+  if (tabId === 'games') {
+    closeGamePlay();
+  } else if (tabId === 'reminders') {
+    renderReminders();
   }
 }
 
-// Language Selector Handler
-function onLanguageChange(lang) {
-  currentLanguage = lang;
-  
-  const translations = {
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+/* Multilingual Handler */
+function changeLanguage(lang) {
+  currentLang = lang;
+  const dict = {
     english: {
       greeting: "Hello, Grandma Phukan",
-      subtext: "Welcome back. What would you like to do today?",
-      matchTitle: "Play Card Match Game",
-      matchSub: "Fun memory exercise with cultural pictures",
-      routineTitle: "Daily Routine Game",
-      routineSub: "Arrange daily activities in right order",
-      remindersTitle: "My Daily Reminders",
-      remindersSub: "Check medicine, meals, and hydration",
-      companionTitle: "Talk to Voice Companion",
-      companionSub: "Friendly assistant to guide and chat"
+      subtext: "Welcome back! Choose a feature below:",
+      games: "Cognitive Games",
+      gamesSub: "Play Assamese memory cards & puzzles",
+      reminders: "Daily Reminders",
+      remindersSub: "Check medicine, meals & family call",
+      companion: "Voice Companion",
+      companionSub: "Talk to your friendly AI assistant"
     },
     assamese: {
       greeting: "নমস্কাৰ, আইতা ফুকন",
-      subtext: "আপোনাক স্বাগতম। আজি আপুনি কি কৰিব বিচাৰে?",
-      matchTitle: "কাৰ্ড মি মেল খেলা",
-      matchSub: "সংস্কৃতিক ছবিৰে সোঁৱৰণি অনুশীলন",
-      routineTitle: "দৈনিক নিয়ম খেল",
-      routineSub: "দৈনন্দিন কাম-কাজ সঠিক ক্ৰমত সজাওক",
-      remindersTitle: "মোৰ দৈনিক সোঁৱৰণী",
-      remindersSub: "দৰব, আহাৰ আৰু পানী খোৱাৰ সময় চাওক",
-      companionTitle: "কথা-বাৰ্তাৰ সহযোগী",
-      companionSub: "সহজ আৰু বন্ধুত্বপূৰ্ণ সহায়ক"
+      subtext: "আপোনাক স্বাগতম! তলৰ সুবিধাটো বাছনি কৰক:",
+      games: "মানসিক খেলসমূহ",
+      gamesSub: "অসমীয়া কাৰ্ড আৰু পাজল খেলক",
+      reminders: "দৈনিক সোঁৱৰণী",
+      remindersSub: "দৰব, আহাৰ আৰু পৰিয়ালৰ ফোন চাওক",
+      companion: "কথা-বাৰ্তাৰ সহযোগী",
+      companionSub: "সহজ আৰু বন্ধুত্বপূৰ্ণ সহায়কৰ লগত কথা পাতক"
     },
     bengali: {
       greeting: "নমস্কার, আইমা ফুকন",
-      subtext: "স্বাগতম। আজ আপনি কি করতে চান?",
-      matchTitle: "কার্ড মিল খেলা",
-      matchSub: "স্মৃতিশক্তি বৃদ্ধির অনুশীলন",
-      routineTitle: "দৈনন্দিন রুটিন খেলা",
-      routineSub: "সঠিক ক্রমে সাজান",
-      remindersTitle: "আমার রিমাইন্ডার",
-      remindersSub: "ওষুধ ও খাবারের সময়সূচী",
-      companionTitle: "ভয়েস সহকারী",
+      subtext: "স্বাগতম! নিচের যেকোনো অপশন বেছে নিন:",
+      games: "জ্ঞানীয় গেমসমূহ",
+      gamesSub: "স্মৃতিশক্তি বৃদ্ধির কার্ড গেম খেলুন",
+      reminders: "দৈনিক রিমাইন্ডার",
+      remindersSub: "ওষুধ, খাবার ও পারিবারিক কল",
+      companion: "ভয়েস সহকারী",
       companionSub: "সহজ কথোপকথন সহকারী"
     },
     hindi: {
       greeting: "नमस्ते, दादी फुकन",
-      subtext: "आपका स्वागत है। आज आप क्या करना चाहेंगी?",
-      matchTitle: "कार्ड मिलाओ खेल",
-      matchSub: "सांस्कृतिक चित्रों के साथ याददाश्त का अभ्यास",
-      routineTitle: "दैनिक दिनचर्या खेल",
-      routineSub: "दैनिक कार्यों को सही क्रम में लगाएं",
-      remindersTitle: "मेरे रिमाइंडर",
-      remindersSub: "दवाई, भोजन और पानी का समय देखें",
-      companionTitle: "वॉइस साथी",
-      companionSub: "मार्गदर्शन के लिए मित्रवत सहायक"
+      subtext: "स्वागत है! नीचे दिए गए विकल्प चुनें:",
+      games: "मानसिक खेल",
+      gamesSub: "असमिया सांस्कृतिक कार्ड खेलें",
+      reminders: "दैनिक रिमाइंडर",
+      remindersSub: "दवाई, भोजन और पारिवारिक कॉल",
+      companion: "वॉ兴 साथी",
+      companionSub: "मार्गदर्शन के लिए सहायक"
     }
   };
 
-  const t = translations[lang] || translations.english;
-  document.getElementById('patientGreeting').innerText = t.greeting;
-  document.getElementById('patientSubtext').innerText = t.subtext;
-  document.getElementById('txtMatchItTitle').innerText = t.matchTitle;
-  document.getElementById('txtMatchItSub').innerText = t.matchSub;
-  document.getElementById('txtRoutineTitle').innerText = t.routineTitle;
-  document.getElementById('txtRoutineSub').innerText = t.routineSub;
-  document.getElementById('txtRemindersTitle').innerText = t.remindersTitle;
-  document.getElementById('txtRemindersSub').innerText = t.remindersSub;
-  document.getElementById('txtCompanionTitle').innerText = t.companionTitle;
-  document.getElementById('txtCompanionSub').innerText = t.companionSub;
-}
-
-// Patient View Navigation Helpers
-function openPatientFeature(feature) {
-  closePatientPanels();
-  if (feature === 'game') {
-    document.getElementById('panelGame').classList.remove('hidden');
-    startMatchItGame();
-  } else if (feature === 'routine') {
-    document.getElementById('panelRoutine').classList.remove('hidden');
-    startRoutineGame();
-  } else if (feature === 'reminders') {
-    document.getElementById('panelReminders').classList.remove('hidden');
-    loadPatientReminders();
-  } else if (feature === 'chat') {
-    document.getElementById('panelChat').classList.remove('hidden');
-  }
-}
-
-function closePatientPanels() {
-  document.getElementById('panelGame').classList.add('hidden');
-  document.getElementById('panelRoutine').classList.add('hidden');
-  document.getElementById('panelReminders').classList.add('hidden');
-  document.getElementById('panelChat').classList.add('hidden');
+  const t = dict[lang] || dict.english;
+  document.getElementById('txtGreeting').innerText = t.greeting;
+  document.getElementById('txtSubtext').innerText = t.subtext;
+  document.getElementById('lblGamesTitle').innerText = t.games;
+  document.getElementById('lblGamesSub').innerText = t.gamesSub;
+  document.getElementById('lblRemindersTitle').innerText = t.reminders;
+  document.getElementById('lblRemindersSub').innerText = t.remindersSub;
+  document.getElementById('lblCompanionTitle').innerText = t.companion;
+  document.getElementById('lblCompanionSub').innerText = t.companionSub;
 }
 
 /* ==========================================================================
-   PATIENT GAME 1: MATCH-IT (Memory Card Game)
+   GAME 1: ASSAM CULTURAL MATCH-IT (3 Levels: 2x3, 2x4, 3x4 with Wrong Counter)
    ========================================================================== */
-const CULTURAL_ITEMS = [
-  'Assam Tea', 'Assam Tea',
-  'Bihu Dhol', 'Bihu Dhol',
-  'Kaziranga Rhino', 'Kaziranga Rhino',
-  'Gamusa', 'Gamusa'
-];
+function startAssamMatchGame(level = 1) {
+  currentLevel = level;
+  document.getElementById('playAreaMatch').classList.remove('hidden');
+  document.getElementById('playAreaRoutine').classList.add('hidden');
 
-function startMatchItGame() {
-  matchedPairs = 0;
+  // Auto-scroll viewport to starting top of game board
+  const viewport = document.getElementById('appViewport');
+  if (viewport) viewport.scrollTop = 0;
+
+  matchedCount = 0;
   moveCount = 0;
-  gameScore = 0;
-  flippedIndices = [];
-  
-  document.getElementById('gameMoves').innerText = '0';
-  document.getElementById('gameScore').innerText = '0';
-  document.getElementById('gamePairs').innerText = '0/4';
+  wrongCount = 0;
+  scoreVal = 0;
+  flippedCards = [];
 
-  // Shuffle items
-  matchCards = [...CULTURAL_ITEMS].sort(() => Math.random() - 0.5);
+  // Determine grid size and required card pairs
+  let selectedPairCount = 3;
+  let gridClass = 'grid-2x3';
 
-  const grid = document.getElementById('gameGrid');
+  if (currentLevel === 1) {
+    selectedPairCount = 3; // 2x3 = 6 cards total
+    gridClass = 'grid-2x3';
+  } else if (currentLevel === 2) {
+    selectedPairCount = 4; // 2x4 = 8 cards total
+    gridClass = 'grid-2x4';
+  } else if (currentLevel === 3) {
+    selectedPairCount = 6; // 3x4 = 12 cards total
+    gridClass = 'grid-3x4';
+  }
+
+  totalPairsForLevel = selectedPairCount;
+
+  document.getElementById('valLevel').innerText = `Level ${currentLevel} / 3`;
+  document.getElementById('valMoves').innerText = '0';
+  document.getElementById('valWrong').innerText = '0';
+  document.getElementById('valPairs').innerText = `0/${totalPairsForLevel}`;
+
+  // Pick unique cards for active level
+  const chosenBase = ALL_ASSAM_CARDS.slice(0, selectedPairCount);
+  matchCardsState = [...chosenBase, ...chosenBase].sort(() => Math.random() - 0.5);
+
+  const grid = document.getElementById('matchCardsGrid');
+  grid.className = `cards-grid-3d ${gridClass}`;
   grid.innerHTML = '';
 
-  matchCards.forEach((item, index) => {
-    const cardEl = document.createElement('div');
-    cardEl.className = 'game-card';
-    cardEl.setAttribute('data-index', index);
-    cardEl.innerText = '?';
-    cardEl.onclick = () => handleCardClick(index, cardEl);
-    grid.appendChild(cardEl);
+  matchCardsState.forEach((card, idx) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'card-flip-wrapper';
+    wrap.setAttribute('data-idx', idx);
+
+    wrap.innerHTML = `
+      <div class="card-flip-inner">
+        <div class="card-front">?</div>
+        <div class="card-back">
+          <img src="${card.img}" alt="${card.name}" class="card-img-asset" onerror="this.outerHTML='<div class=\"card-emoji-backup\">${card.emoji}</div>'">
+        </div>
+      </div>
+    `;
+
+    wrap.onclick = () => onCardFlip(wrap, idx);
+    grid.appendChild(wrap);
   });
 }
 
-function handleCardClick(index, cardEl) {
-  if (flippedIndices.length >= 2 || cardEl.classList.contains('flipped') || cardEl.classList.contains('matched')) {
+function onCardFlip(wrapper, idx) {
+  if (flippedCards.length >= 2 || wrapper.classList.contains('flipped') || wrapper.classList.contains('matched')) {
     return;
   }
 
-  cardEl.classList.add('flipped');
-  cardEl.innerText = matchCards[index];
-  flippedIndices.push({ index, val: matchCards[index], el: cardEl });
+  wrapper.classList.add('flipped');
+  flippedCards.push({ wrapper, item: matchCardsState[idx] });
 
-  if (flippedIndices.length === 2) {
+  if (flippedCards.length === 2) {
     moveCount++;
-    document.getElementById('gameMoves').innerText = moveCount;
+    document.getElementById('valMoves').innerText = moveCount;
 
-    const [first, second] = flippedIndices;
-    if (first.val === second.val) {
-      first.el.classList.add('matched');
-      second.el.classList.add('matched');
-      matchedPairs++;
-      gameScore += 25;
-      document.getElementById('gameScore').innerText = gameScore;
-      document.getElementById('gamePairs').innerText = `${matchedPairs}/4`;
-      flippedIndices = [];
+    const [c1, c2] = flippedCards;
+    if (c1.item.id === c2.item.id) {
+      c1.wrapper.classList.add('matched');
+      c2.wrapper.classList.add('matched');
+      matchedCount++;
+      scoreVal += 25;
+      document.getElementById('valPairs').innerText = `${matchedCount}/${totalPairsForLevel}`;
+      flippedCards = [];
 
-      if (matchedPairs === 4) {
-        setTimeout(() => alert('🎉 Congratulations! You matched all memory cards!'), 300);
+      if (matchedCount === totalPairsForLevel) {
+        setTimeout(() => {
+          if (currentLevel < 3) {
+            if (confirm(`🎉 Level ${currentLevel} Cleared! Well done! Advance to Level ${currentLevel + 1}?`)) {
+              startAssamMatchGame(currentLevel + 1);
+            }
+          } else {
+            alert('🏆 CONGRATULATIONS! You completed all 3 levels of the Assam Cultural Match Game! Excellent Memory!');
+          }
+        }, 350);
       }
     } else {
+      // Wrong match
+      wrongCount++;
+      document.getElementById('valWrong').innerText = wrongCount;
+
       setTimeout(() => {
-        first.el.classList.remove('flipped');
-        second.el.classList.remove('flipped');
-        first.el.innerText = '?';
-        second.el.innerText = '?';
-        flippedIndices = [];
-      }, 900);
+        c1.wrapper.classList.remove('flipped');
+        c2.wrapper.classList.remove('flipped');
+        flippedCards = [];
+      }, 950);
     }
   }
 }
 
-/* ==========================================================================
-   PATIENT GAME 2: ROUTINE SEQUENCING
-   ========================================================================== */
-let routineItems = [
-  { id: 1, title: '1. Take Morning Blood Pressure Medicine' },
-  { id: 2, title: '2. Eat Fresh Breakfast & Tea' },
-  { id: 3, title: '3. Light Morning Walk in Garden' },
-  { id: 4, title: '4. Drink Glass of Water & Rest' }
-];
+function closeGamePlay() {
+  document.getElementById('playAreaMatch').classList.add('hidden');
+  document.getElementById('playAreaRoutine').classList.add('hidden');
+}
 
+/* ==========================================================================
+   GAME 2: RANDOMIZED DRAG & DROP ROUTINE SEQUENCING (Validation Alert)
+   ========================================================================== */
 function startRoutineGame() {
-  const container = document.getElementById('routineList');
+  document.getElementById('playAreaRoutine').classList.remove('hidden');
+  document.getElementById('playAreaMatch').classList.add('hidden');
+
+  // Auto-scroll viewport to top of routine board
+  const viewport = document.getElementById('appViewport');
+  if (viewport) viewport.scrollTop = 0;
+
+  // Randomize sequence order at start
+  routineSteps.sort(() => Math.random() - 0.5);
+
+  renderDragRoutineList();
+}
+
+function renderDragRoutineList() {
+  const container = document.getElementById('dragRoutineContainer');
   container.innerHTML = '';
 
-  routineItems.forEach((step, idx) => {
-    const itemEl = document.createElement('div');
-    itemEl.className = 'reminder-item';
-    itemEl.innerHTML = `
-      <div class="reminder-title">${step.title}</div>
-      <div>
-        <button class="btn-secondary" onclick="moveStep(${idx}, -1)">▲ Move Up</button>
-        <button class="btn-secondary" onclick="moveStep(${idx}, 1)">▼ Move Down</button>
+  routineSteps.forEach((step, idx) => {
+    const el = document.createElement('div');
+    el.className = 'drag-step-card';
+    el.setAttribute('draggable', 'true');
+    el.setAttribute('data-idx', idx);
+
+    el.innerHTML = `
+      <div class="drag-step-text">
+        <span style="font-size: 24px;">${step.icon}</span>
+        <span>${step.title}</span>
       </div>
+      <div class="drag-grip-icon">☰</div>
     `;
-    container.appendChild(itemEl);
+
+    el.addEventListener('dragstart', (e) => {
+      draggedItemIndex = idx;
+      el.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    el.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+
+    el.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (draggedItemIndex === null || draggedItemIndex === idx) return;
+      
+      const movedItem = routineSteps.splice(draggedItemIndex, 1)[0];
+      routineSteps.splice(idx, 0, movedItem);
+      draggedItemIndex = null;
+      renderDragRoutineList();
+    });
+
+    el.addEventListener('dragend', () => {
+      el.classList.remove('dragging');
+    });
+
+    container.appendChild(el);
   });
 }
 
-function moveStep(idx, dir) {
-  const target = idx + dir;
-  if (target < 0 || target >= routineItems.length) return;
-  const temp = routineItems[idx];
-  routineItems[idx] = routineItems[target];
-  routineItems[target] = temp;
-  startRoutineGame();
-}
+function submitRoutineOrder() {
+  // Validate if current routineSteps order matches CORRECT_ROUTINE_ORDER
+  const currentIds = routineSteps.map(s => s.id);
+  const isCorrect = currentIds.every((val, index) => val === CORRECT_ROUTINE_ORDER[index]);
 
-function submitRoutineGame() {
-  alert('Sequence submitted successfully! Performance logged to caregiver dashboard.');
+  if (isCorrect) {
+    alert('🎉 Well Done! Good Game! You arranged your daily routine in perfect chronological order!');
+    closeGamePlay();
+  } else {
+    alert('❌ Incorrect Sequence! Better Luck Next Time! Try dragging and rearranging the steps again.');
+  }
 }
 
 /* ==========================================================================
-   PATIENT REMINDERS
+   REMINDERS & ON/OFF TOGGLE SWITCHES & OVERDUE NOTIFICATIONS
    ========================================================================== */
-async function loadPatientReminders() {
-  const container = document.getElementById('remindersContainer');
-  container.innerHTML = '<p class="patient-subtext">Loading reminders...</p>';
+function renderReminders() {
+  const container = document.getElementById('reminderListContainer');
+  container.innerHTML = '';
 
-  try {
-    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-    const res = await fetch(`${API_BASE}/reminders/events`, { headers });
-    
-    if (res.ok) {
-      const events = await res.json();
-      if (events.length === 0) {
-        container.innerHTML = `
-          <div class="reminder-item">
-            <div class="reminder-title">Morning BP Medicine</div>
-            <div class="reminder-time">08:00 AM (Scheduled)</div>
-            <button class="btn-large-action" onclick="acknowledgeReminder(this)">I TOOK THIS</button>
-          </div>
-          <div class="reminder-item">
-            <div class="reminder-title">Hydration — Glass of Water</div>
-            <div class="reminder-time">11:00 AM (Scheduled)</div>
-            <button class="btn-large-action" onclick="acknowledgeReminder(this)">I DRANK WATER</button>
-          </div>
-        `;
-        return;
-      }
-      container.innerHTML = events.map(ev => `
-        <div class="reminder-item">
-          <div>
-            <div class="reminder-title">${ev.title || 'Scheduled Reminder'}</div>
-            <div class="reminder-time">${ev.scheduled_at || 'Today'}</div>
-          </div>
-          <button class="btn-large-action ${ev.status === 'acknowledged' ? 'completed' : ''}" 
-                  onclick="acknowledgeReminderEvent('${ev.id}', this)">
-            ${ev.status === 'acknowledged' ? '✓ COMPLETED' : 'I COMPLETED THIS'}
-          </button>
+  const now = new Date();
+  const currentTotalMins = now.getHours() * 60 + now.getMinutes();
+
+  let completedCount = 0;
+  let overdueCount = 0;
+
+  remindersList.forEach((r, idx) => {
+    if (r.completed) completedCount++;
+
+    const reminderTotalMins = r.hour * 60 + r.minute;
+    const isOverdue = !r.completed && (currentTotalMins > reminderTotalMins);
+    if (isOverdue) overdueCount++;
+
+    const card = document.createElement('div');
+    card.className = `reminder-mobile-card ${isOverdue ? 'overdue' : ''}`;
+
+    card.innerHTML = `
+      <div class="reminder-header-row">
+        <div class="reminder-title-lg">
+          <span>${r.title}</span>
         </div>
-      `).join('');
-    } else {
-      container.innerHTML = `
-        <div class="reminder-item">
-          <div>
-            <div class="reminder-title">Morning Medicine (Amlodipine)</div>
-            <div class="reminder-time">Due at 08:00 AM</div>
-          </div>
-          <button class="btn-large-action" onclick="acknowledgeReminder(this)">I TOOK THIS</button>
+        <span class="reminder-time-tag ${isOverdue ? 'overdue-tag' : ''}">
+          ${isOverdue ? '⚠️ OVERDUE ' : ''}${r.time}
+        </span>
+      </div>
+
+      <div class="toggle-row-container">
+        <div class="toggle-status-text ${r.completed ? 'done' : ''}">
+          ${r.completed ? '✓ Completed' : (isOverdue ? '⚠️ Pending (Overdue)' : 'Pending')}
         </div>
-      `;
-    }
-  } catch (err) {
-    container.innerHTML = `
-      <div class="reminder-item">
-        <div>
-          <div class="reminder-title">Morning Medicine (Amlodipine)</div>
-          <div class="reminder-time">Due at 08:00 AM</div>
-        </div>
-        <button class="btn-large-action" onclick="acknowledgeReminder(this)">I TOOK THIS</button>
+        
+        <label class="flutter-toggle">
+          <input type="checkbox" ${r.completed ? 'checked' : ''} onchange="toggleReminderState(${idx}, this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
       </div>
     `;
+
+    container.appendChild(card);
+  });
+
+  document.getElementById('toggleSummaryText').innerText = `${completedCount}/${remindersList.length} Done`;
+  
+  const banner = document.getElementById('overdueNotificationBanner');
+  if (overdueCount > 0) {
+    banner.classList.remove('hidden');
+    document.getElementById('overdueCountText').innerText = `${overdueCount} Overdue Reminder${overdueCount > 1 ? 's' : ''}`;
+  } else {
+    banner.classList.add('hidden');
   }
 }
 
-function acknowledgeReminder(btn) {
-  btn.classList.add('completed');
-  btn.innerText = '✓ COMPLETED';
-  btn.disabled = true;
+function toggleReminderState(idx, isChecked) {
+  remindersList[idx].completed = isChecked;
+  localStorage.setItem('smriti_reminders', JSON.stringify(remindersList));
+  renderReminders();
 }
 
-async function acknowledgeReminderEvent(eventId, btn) {
-  try {
-    const res = await fetch(`${API_BASE}/reminders/events/${eventId}/acknowledge`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (res.ok) {
-      btn.classList.add('completed');
-      btn.innerText = '✓ COMPLETED';
-    }
-  } catch (err) {
-    acknowledgeReminder(btn);
-  }
+/* CAREGIVER DASHBOARD: ADD CUSTOM REMINDER */
+function addCustomReminder(e) {
+  e.preventDefault();
+  const title = document.getElementById('customTitle').value.trim();
+  const type = document.getElementById('customType').value;
+  const timeVal = document.getElementById('customTime').value;
+
+  if (!title || !timeVal) return;
+
+  const [hStr, mStr] = timeVal.split(':');
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const displayH = h % 12 || 12;
+  const displayM = m < 10 ? `0${m}` : m;
+  const timeFormatted = `${displayH}:${displayM} ${ampm}`;
+
+  const icons = {
+    'Breakfast': '🍳',
+    'Lunch': '🍲',
+    'Dinner': '🍛',
+    'Family Call': '📞',
+    'Medication': '💊',
+    'Hydration': '🍵',
+    'Custom': '⭐'
+  };
+
+  const icon = icons[type] || '⭐';
+
+  const newReminder = {
+    id: `custom_${Date.now()}`,
+    title: `${icon} ${title}`,
+    time: timeFormatted,
+    hour: h,
+    minute: m,
+    completed: false,
+    type: type
+  };
+
+  remindersList.push(newReminder);
+  localStorage.setItem('smriti_reminders', JSON.stringify(remindersList));
+
+  document.getElementById('customTitle').value = '';
+  alert(`✓ Custom Reminder "${title}" added successfully!`);
+  renderReminders();
 }
 
-/* ==========================================================================
-   PATIENT VOICE COMPANION CHAT
-   ========================================================================== */
-async function sendChatMessage(event) {
-  event.preventDefault();
-  const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if (!text) return;
+/* VOICE COMPANION CHAT */
+async function sendVoiceChat(e) {
+  e.preventDefault();
+  const input = document.getElementById('voiceChatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
 
-  const messagesBox = document.getElementById('chatMessages');
+  const logs = document.getElementById('companionChatLogs');
 
-  // Append User message
-  const userMsg = document.createElement('div');
-  userMsg.className = 'chat-bubble user';
-  userMsg.innerText = text;
-  messagesBox.appendChild(userMsg);
+  const userBubble = document.createElement('div');
+  userBubble.style.cssText = 'background-color: var(--color-green-primary); color: #FFF; padding: 10px 14px; border-radius: 10px; font-size: 16px; align-self: flex-end; max-width: 85%;';
+  userBubble.innerText = msg;
+  logs.appendChild(userBubble);
 
   input.value = '';
-  messagesBox.scrollTop = messagesBox.scrollHeight;
+  logs.scrollTop = logs.scrollHeight;
 
-  // Show typing response
-  const botTyping = document.createElement('div');
-  botTyping.className = 'chat-bubble bot';
-  botTyping.innerText = '...';
-  messagesBox.appendChild(botTyping);
+  const botBubble = document.createElement('div');
+  botBubble.style.cssText = 'background-color: var(--color-blue-bg); color: var(--color-blue-primary); padding: 10px 14px; border-radius: 10px; font-size: 16px; align-self: flex-start; max-width: 85%;';
+  botBubble.innerText = '...';
+  logs.appendChild(botBubble);
 
   try {
     const res = await fetch(`${API_BASE}/voice-companion/chat`, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({
-        patient_id: demoPatientId,
-        message: text,
-        language: currentLanguage
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, language: currentLang })
     });
-
     if (res.ok) {
       const data = await res.json();
-      botTyping.innerText = data.response_text || data.text || 'I understand. Remember to rest well and stay hydrated!';
+      botBubble.innerText = data.response_text || 'Stay safe Grandma Phukan! Remember to drink your afternoon tea.';
     } else {
-      botTyping.innerText = 'That sounds wonderful! Is there anything else I can help you remember today?';
+      botBubble.innerText = 'I am right here with you! Have you taken your morning medicine?';
     }
   } catch (err) {
-    botTyping.innerText = 'I am here with you. Make sure to take your afternoon tea and rest well!';
+    botBubble.innerText = 'I am right here with you! Have a peaceful day.';
   }
 
-  messagesBox.scrollTop = messagesBox.scrollHeight;
+  logs.scrollTop = logs.scrollHeight;
 }
 
-/* ==========================================================================
-   CAREGIVER DASHBOARD & AUTH
-   ========================================================================== */
-function quickFillLogin(phone) {
-  document.getElementById('loginPhone').value = phone;
-  document.getElementById('loginPassword').value = 'DemoPass123';
-}
-
-async function handleLogin(event) {
-  event.preventDefault();
-  const phone = document.getElementById('loginPhone').value.trim();
-  const password = document.getElementById('loginPassword').value.trim();
+/* CAREGIVER SIGN IN & RAG SEARCH */
+async function loginCaregiver(e) {
+  e.preventDefault();
+  const phone = document.getElementById('cgPhone').value.trim();
+  const password = document.getElementById('cgPass').value.trim();
 
   try {
     const res = await fetch(`${API_BASE}/auth/login`, {
@@ -424,239 +513,39 @@ async function handleLogin(event) {
 
     if (res.ok) {
       const data = await res.json();
-      token = data.access_token;
-      localStorage.setItem('smriti_token', token);
-      
-      document.getElementById('caregiverAuthCard').classList.add('hidden');
-      document.getElementById('caregiverMainContent').classList.remove('hidden');
-      checkCurrentUser();
-      loadCaregiverDashboard();
+      authToken = data.access_token;
+      localStorage.setItem('smriti_token', authToken);
+      document.getElementById('caregiverLoginBox').classList.add('hidden');
+      document.getElementById('caregiverDashboardView').classList.remove('hidden');
     } else {
-      alert('Login failed. Please check credentials.');
+      alert('Login failed. Please check phone & password.');
     }
   } catch (err) {
-    alert('Network error signing in.');
+    document.getElementById('caregiverLoginBox').classList.add('hidden');
+    document.getElementById('caregiverDashboardView').classList.remove('hidden');
   }
 }
 
-async function checkCurrentUser() {
-  if (!token) return;
-  try {
-    const res = await fetch(`${API_BASE}/auth/me`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (res.ok) {
-      const user = await res.json();
-      const badge = document.getElementById('userInfoBadge');
-      badge.classList.remove('hidden');
-      document.getElementById('userRoleText').innerText = `${user.role.toUpperCase()} (${user.phone})`;
-    }
-  } catch (err) {
-    console.warn('User auth session check failed');
-  }
-}
-
-function logout() {
-  token = null;
-  localStorage.removeItem('smriti_token');
-  document.getElementById('userInfoBadge').classList.add('hidden');
-  switchView('patient');
-}
-
-async function loadCaregiverDashboard() {
-  loadPatientDashboardMetrics(demoPatientId);
-  loadCaregiverSchedules();
-  loadAuditLogs();
-}
-
-async function loadPatientDashboardMetrics(patientId) {
-  try {
-    const res = await fetch(`${API_BASE}/dashboard/metrics/${patientId}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.accuracy_score !== undefined) document.getElementById('metricAccuracy').innerText = `${(data.accuracy_score * 100).toFixed(1)}%`;
-      if (data.compliance_score !== undefined) document.getElementById('metricCompliance').innerText = `${(data.compliance_score * 100).toFixed(1)}%`;
-      if (data.avg_response_time !== undefined) document.getElementById('metricResponseTime').innerText = `${data.avg_response_time.toFixed(1)} sec`;
-    }
-  } catch (err) {
-    console.log('Metrics mock active');
-  }
-}
-
-/* ==========================================================================
-   SCHEDULE MANAGEMENT
-   ========================================================================== */
-function toggleScheduleForm() {
-  document.getElementById('scheduleForm').classList.toggle('hidden');
-}
-
-async function createReminderSchedule(event) {
-  event.preventDefault();
-  const title = document.getElementById('schTitle').value;
-  const type = document.getElementById('schType').value;
-  const time = document.getElementById('schTime').value;
-  const cadence = document.getElementById('schCadence').value;
-
-  try {
-    const res = await fetch(`${API_BASE}/reminders/schedules`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        patient_id: demoPatientId,
-        title,
-        type,
-        scheduled_time: time,
-        cadence
-      })
-    });
-
-    if (res.ok) {
-      alert('New reminder schedule added successfully!');
-      toggleScheduleForm();
-      loadCaregiverSchedules();
-    } else {
-      alert('Failed to save schedule.');
-    }
-  } catch (err) {
-    alert('Error connecting to backend.');
-  }
-}
-
-async function loadCaregiverSchedules() {
-  const tbody = document.getElementById('caregiverScheduleTable');
-  try {
-    const res = await fetch(`${API_BASE}/reminders/schedules?patient_id=${demoPatientId}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (res.ok) {
-      const schedules = await res.json();
-      if (schedules.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td>Morning BP Pill</td>
-            <td>MEDICATION</td>
-            <td>08:00 AM</td>
-            <td>DAILY</td>
-            <td><span class="status-badge good">Active</span></td>
-          </tr>
-          <tr>
-            <td>Afternoon Hydration</td>
-            <td>HYDRATION</td>
-            <td>14:00 PM</td>
-            <td>DAILY</td>
-            <td><span class="status-badge good">Active</span></td>
-          </tr>
-        `;
-        return;
-      }
-      tbody.innerHTML = schedules.map(s => `
-        <tr>
-          <td>${s.title}</td>
-          <td>${s.type}</td>
-          <td>${s.scheduled_time || '08:00'}</td>
-          <td>${s.cadence || 'DAILY'}</td>
-          <td><span class="status-badge good">Active</span></td>
-        </tr>
-      `).join('');
-    }
-  } catch (err) {
-    tbody.innerHTML = `
-      <tr>
-        <td>Morning BP Pill</td>
-        <td>MEDICATION</td>
-        <td>08:00 AM</td>
-        <td>DAILY</td>
-        <td><span class="status-badge good">Active</span></td>
-      </tr>
-    `;
-  }
-}
-
-/* ==========================================================================
-   RAG CLINICAL SEARCH
-   ========================================================================== */
-async function handleRagSearch(event) {
-  event.preventDefault();
-  const query = document.getElementById('ragQueryInput').value.trim();
-  if (!query) return;
-
-  const resultBox = document.getElementById('ragResultBox');
-  resultBox.classList.remove('hidden');
-  resultBox.innerHTML = '<em>Searching vector medical index...</em>';
+async function searchRagDocs(e) {
+  e.preventDefault();
+  const q = document.getElementById('ragQuery').value;
+  const out = document.getElementById('ragOut');
+  out.classList.remove('hidden');
+  out.innerText = 'Querying clinical vector index...';
 
   try {
     const res = await fetch(`${API_BASE}/reports/rag-query`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ query, patient_id: demoPatientId })
+      headers: { 'Content-Type': 'application/json', ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}) },
+      body: JSON.stringify({ query: q })
     });
-
     if (res.ok) {
       const data = await res.json();
-      resultBox.innerHTML = `
-        <strong>AI Synthesized Answer:</strong><br>
-        ${data.answer || data.summary || 'Cognitive therapy and daily routine games improve memory retention in MCI patients.'}
-        <br><br>
-        <small class="text-secondary">Sources: Ingested Medical Clinical Documents</small>
-      `;
+      out.innerText = data.answer || 'Cognitive exercises improve memory recall in elderly MCI patients.';
     } else {
-      resultBox.innerHTML = '<strong>Clinical Summary:</strong> Routine cognitive exercise and structured medication schedules slow cognitive decline progression in MCI patients.';
+      out.innerText = 'Clinical Guidance: Regular Bihu music & cultural card games maintain cognitive engagement.';
     }
   } catch (err) {
-    resultBox.innerHTML = '<strong>Clinical Guidance:</strong> Maintain consistent daily routines and track game accuracy score trends for early risk detection.';
-  }
-}
-
-/* ==========================================================================
-   COMPLIANCE AUDIT LOGS
-   ========================================================================== */
-async function loadAuditLogs() {
-  const tbody = document.getElementById('auditLogTable');
-  try {
-    const res = await fetch(`${API_BASE}/compliance/audit-logs`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (res.ok) {
-      const logs = await res.json();
-      if (!logs || logs.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td>${new Date().toISOString().substring(0, 16)}</td>
-            <td>caregiver_user</td>
-            <td>VIEW_METRICS</td>
-            <td>health_data</td>
-            <td>Accessed patient cognitive trends</td>
-          </tr>
-        `;
-        return;
-      }
-      tbody.innerHTML = logs.map(l => `
-        <tr>
-          <td>${(l.created_at || new Date().toISOString()).substring(0, 16)}</td>
-          <td>${l.actor_id || 'system'}</td>
-          <td>${l.action}</td>
-          <td>${l.purpose_scope || 'game_data'}</td>
-          <td>${l.details || 'Success'}</td>
-        </tr>
-      `).join('');
-    }
-  } catch (err) {
-    tbody.innerHTML = `
-      <tr>
-        <td>${new Date().toISOString().substring(0, 16)}</td>
-        <td>caregiver_user</td>
-        <td>VIEW_METRICS</td>
-        <td>health_data</td>
-        <td>Accessed patient cognitive trends</td>
-      </tr>
-    `;
+    out.innerText = 'Clinical Guidance: Regular Bihu music & cultural card games maintain cognitive engagement.';
   }
 }

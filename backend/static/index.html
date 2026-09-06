@@ -3,359 +3,319 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smriti — AI Cognitive Companion</title>
-  <meta name="description" content="AI-Powered Cognitive Gaming and Memory Assistance Platform for Elderly Care">
+  <title>Smriti — Flutter Cognitive Companion App</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-  <!-- Top App Navigation & Language Bar -->
-  <header class="app-header">
-    <div class="brand-container">
-      <div class="brand-logo-icon">S</div>
-      <div>
-        <h1 class="brand-title">Smriti</h1>
-        <div class="brand-subtitle">AI Cognitive Companion & Memory Assistant</div>
-      </div>
+  <!-- Flutter Mobile App Device Frame -->
+  <div class="phone-simulator-frame">
+    
+    <!-- Mobile Status Bar -->
+    <div class="mobile-status-bar">
+      <span>09:41</span>
+      <div class="status-notch"></div>
+      <span>5G ⚡ 98%</span>
     </div>
 
-    <div class="header-actions">
-      <!-- Mode Switcher -->
-      <div class="view-mode-toggle" id="viewModeToggle">
-        <button type="button" class="toggle-btn active" id="btnPatientMode" onclick="switchView('patient')">
-          Elder / Patient View
-        </button>
-        <button type="button" class="toggle-btn" id="btnCaregiverMode" onclick="switchView('caregiver')">
-          Caregiver Dashboard
-        </button>
+    <!-- Flutter App Bar Header -->
+    <header class="flutter-app-bar">
+      <div class="app-title-group">
+        <div class="app-logo-badge">S</div>
+        <div>
+          <div class="app-name">Smriti</div>
+          <div class="app-tagline">North East Cognitive Care</div>
+        </div>
       </div>
 
       <!-- Language Selector -->
-      <select id="languageSelect" class="lang-select" onchange="onLanguageChange(this.value)">
-        <option value="english" selected>English</option>
-        <option value="assamese">Assamese (অসমীয়া)</option>
-        <option value="bengali">Bengali (বাংলা)</option>
-        <option value="hindi">Hindi (हिंदी)</option>
+      <select id="langSelect" class="lang-picker-sm" onchange="changeLanguage(this.value)">
+        <option value="english" selected>EN</option>
+        <option value="assamese">অসমীয়া</option>
+        <option value="bengali">বাংলা</option>
+        <option value="hindi">हिंदी</option>
       </select>
+    </header>
 
-      <div id="userInfoBadge" class="user-status hidden">
-        <span id="userRoleText">Patient</span>
-        <button type="button" class="btn-secondary" onclick="logout()">Logout</button>
-      </div>
-    </div>
-  </header>
+    <!-- Main Mobile Body Viewport -->
+    <main class="flutter-body-viewport" id="appViewport">
 
-  <main class="main-wrapper">
-
-    <!-- ====================================================================
-         1. PATIENT DASHBOARD VIEW (Large Text, High Accessibility)
-         ==================================================================== -->
-    <section id="patientView" class="patient-view">
-
-      <!-- Patient Welcome Header -->
-      <div class="patient-welcome-card">
-        <h2 id="patientGreeting" class="patient-title">Hello, Grandma Phukan</h2>
-        <p id="patientSubtext" class="patient-subtext">Welcome back. What would you like to do today?</p>
+      <!-- Global Overdue Alert Notification Bar -->
+      <div id="overdueNotificationBanner" class="hidden" style="background-color: var(--color-danger-bg); border: 2px solid var(--color-danger); border-radius: var(--radius-app); padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="font-size: 14px; font-weight: 700; color: var(--color-danger);">
+          ⚠️ <span id="overdueCountText">1 Overdue Reminder</span> — Needs Action!
+        </div>
+        <button type="button" class="btn-start-game" style="padding: 6px 10px; font-size: 12px; background-color: var(--color-danger);" onclick="switchNavTab('reminders')">
+          View Reminders
+        </button>
       </div>
 
-      <!-- Ease of Access Big Action Buttons -->
-      <div class="access-buttons-grid">
+      <!-- ====================================================================
+           TAB 1: HOME DASHBOARD (Patient Ease-of-Access Overview)
+           ==================================================================== -->
+      <section id="tabHome" class="animate-tab-in">
         
-        <button type="button" class="access-btn" onclick="openPatientFeature('game')">
-          <div class="access-btn-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-              <path d="M7 7h4v4H7zM13 13h4v4h-4z"></path>
-            </svg>
-          </div>
-          <div>
-            <div class="access-btn-text-main" id="txtMatchItTitle">Play Card Match Game</div>
-            <div class="access-btn-text-sub" id="txtMatchItSub">Fun memory exercise with cultural pictures</div>
-          </div>
-        </button>
-
-        <button type="button" class="access-btn" onclick="openPatientFeature('routine')">
-          <div class="access-btn-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1"></path>
-            </svg>
-          </div>
-          <div>
-            <div class="access-btn-text-main" id="txtRoutineTitle">Daily Routine Game</div>
-            <div class="access-btn-text-sub" id="txtRoutineSub">Arrange daily activities in right order</div>
-          </div>
-        </button>
-
-        <button type="button" class="access-btn" onclick="openPatientFeature('reminders')">
-          <div class="access-btn-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-          </div>
-          <div>
-            <div class="access-btn-text-main" id="txtRemindersTitle">My Daily Reminders</div>
-            <div class="access-btn-text-sub" id="txtRemindersSub">Check medicine, meals, and hydration</div>
-          </div>
-        </button>
-
-        <button type="button" class="access-btn" onclick="openPatientFeature('chat')">
-          <div class="access-btn-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            </svg>
-          </div>
-          <div>
-            <div class="access-btn-text-main" id="txtCompanionTitle">Talk to Voice Companion</div>
-            <div class="access-btn-text-sub" id="txtCompanionSub">Friendly assistant to guide and chat</div>
-          </div>
-        </button>
-
-      </div>
-
-      <!-- Feature Panel: Match-It Game -->
-      <div id="panelGame" class="patient-panel hidden">
-        <div class="panel-header">
-          <h3 class="panel-title">Match It — Cultural Memory Game</h3>
-          <button type="button" class="btn-secondary" onclick="closePatientPanels()">Back</button>
-        </div>
-        
-        <div class="game-score-bar">
-          <div>Moves: <span id="gameMoves">0</span></div>
-          <div>Score: <span id="gameScore">0</span></div>
-          <div>Pairs Matched: <span id="gamePairs">0/4</span></div>
+        <div class="patient-greeting-card">
+          <div class="greeting-text-lg" id="txtGreeting">Hello, Grandma Phukan</div>
+          <div class="greeting-sub-lg" id="txtSubtext">Welcome back! Choose a feature below:</div>
         </div>
 
-        <div id="gameGrid" class="cards-game-container">
-          <!-- Dynamically populated card items -->
-        </div>
-      </div>
-
-      <!-- Feature Panel: Routine Game -->
-      <div id="panelRoutine" class="patient-panel hidden">
-        <div class="panel-header">
-          <h3 class="panel-title">Daily Routine Sequencing</h3>
-          <button type="button" class="btn-secondary" onclick="closePatientPanels()">Back</button>
-        </div>
-        <p class="patient-subtext">Order your morning steps from first to last:</p>
-
-        <div id="routineList" class="reminders-list">
-          <!-- Dynamically populated routine steps -->
-        </div>
-        <button type="button" class="btn-large-action" onclick="submitRoutineGame()">Submit Sequence</button>
-      </div>
-
-      <!-- Feature Panel: Reminders -->
-      <div id="panelReminders" class="patient-panel hidden">
-        <div class="panel-header">
-          <h3 class="panel-title">Today's Reminders</h3>
-          <button type="button" class="btn-secondary" onclick="closePatientPanels()">Back</button>
-        </div>
-
-        <div id="remindersContainer" class="reminders-list">
-          <!-- Dynamically loaded reminder items -->
-        </div>
-      </div>
-
-      <!-- Feature Panel: Voice Companion Chat -->
-      <div id="panelChat" class="patient-panel hidden">
-        <div class="panel-header">
-          <h3 class="panel-title">Voice & Text Companion</h3>
-          <button type="button" class="btn-secondary" onclick="closePatientPanels()">Back</button>
-        </div>
-
-        <div id="chatMessages" class="chat-box">
-          <div class="chat-bubble bot">
-            Hello! I am your Smriti companion. How are you feeling today?
-          </div>
-        </div>
-
-        <form class="chat-input-bar" onsubmit="sendChatMessage(event)">
-          <input type="text" id="chatInput" class="chat-input-field" placeholder="Type or say something..." required>
-          <button type="submit" class="btn-large-action">Send</button>
-        </form>
-      </div>
-
-    </section>
-
-
-    <!-- ====================================================================
-         2. CAREGIVER DASHBOARD VIEW
-         ==================================================================== -->
-    <section id="caregiverView" class="caregiver-view hidden">
-
-      <!-- Login Card (If not authenticated) -->
-      <div id="caregiverAuthCard" class="auth-card section-card">
-        <div class="section-title-bar">
-          <h2 class="section-h2">Caregiver / Clinician Login</h2>
-        </div>
-        <form onsubmit="handleLogin(event)">
-          <div class="form-group">
-            <label class="form-label" for="loginPhone">Phone Number</label>
-            <input type="text" id="loginPhone" class="form-control" value="919876543002" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="loginPassword">Password</label>
-            <input type="password" id="loginPassword" class="form-control" value="DemoPass123" required>
-          </div>
-          <button type="submit" class="btn-primary" style="width: 100%;">Sign In</button>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
           
-          <div class="demo-shortcut-bar">
-            <button type="button" class="btn-shortcut" onclick="quickFillLogin('919876543002')">Caregiver (919876543002)</button>
-            <button type="button" class="btn-shortcut" onclick="quickFillLogin('919876543003')">Clinician (919876543003)</button>
-          </div>
-        </form>
-      </div>
+          <button type="button" class="ease-card" onclick="switchNavTab('games')">
+            <div class="ease-icon-box green">🎮</div>
+            <div>
+              <div class="ease-title" id="lblGamesTitle">Cognitive Games</div>
+              <div class="ease-desc" id="lblGamesSub">Play Assamese memory cards & puzzles</div>
+            </div>
+          </button>
 
-      <!-- Main Caregiver Workspace (When logged in) -->
-      <div id="caregiverMainContent" class="hidden">
+          <button type="button" class="ease-card" onclick="switchNavTab('reminders')">
+            <div class="ease-icon-box gold">⏰</div>
+            <div>
+              <div class="ease-title" id="lblRemindersTitle">Daily Reminders</div>
+              <div class="ease-desc" id="lblRemindersSub">Check medicine, meals & family call</div>
+            </div>
+          </button>
+
+          <button type="button" class="ease-card" onclick="switchNavTab('companion')">
+            <div class="ease-icon-box blue">💬</div>
+            <div>
+              <div class="ease-title" id="lblCompanionTitle">Voice Companion</div>
+              <div class="ease-desc" id="lblCompanionSub">Talk to your friendly AI assistant</div>
+            </div>
+          </button>
+
+        </div>
+
+      </section>
+
+      <!-- ====================================================================
+           TAB 2: DEDICATED GAMES MENU (3 Levels & Random Drag Sequence)
+           ==================================================================== -->
+      <section id="tabGames" class="animate-tab-in hidden">
         
-        <!-- Patient Roster & Overview Header -->
-        <div class="section-card">
-          <div class="section-title-bar">
-            <h2 class="section-h2">Patient Cognitive Health Overview</h2>
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <label for="patientSelector" class="form-label" style="margin:0;">Select Patient:</label>
-              <select id="patientSelector" class="form-control" onchange="loadPatientDashboardData(this.value)">
-                <option value="6910b26a-369c-491d-b4d1-e8e950636528">Grandma Phukan (MCI Cohort - Assamese)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="metrics-summary-container">
-            <div class="metric-row">
-              <div>
-                <div class="metric-label">7-Day Cognitive Accuracy</div>
-                <div class="metric-val" id="metricAccuracy">84.5%</div>
-              </div>
-              <span class="status-badge good">Normal Range</span>
-            </div>
-
-            <div class="metric-row">
-              <div>
-                <div class="metric-label">Medication & Routine Adherence</div>
-                <div class="metric-val" id="metricCompliance">92.0%</div>
-              </div>
-              <span class="status-badge good">Optimal</span>
-            </div>
-
-            <div class="metric-row">
-              <div>
-                <div class="metric-label">Average Game Response Time</div>
-                <div class="metric-val" id="metricResponseTime">4.2 sec</div>
-              </div>
-              <span class="status-badge warn">Slight Latency</span>
-            </div>
-
-            <div class="metric-row">
-              <div>
-                <div class="metric-label">Active Escalation Alerts</div>
-                <div class="metric-val" id="metricAlertCount">0</div>
-              </div>
-              <span class="status-badge good">No Active Escalations</span>
-            </div>
-          </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <h2 style="font-family: var(--font-serif); font-size: 24px; color: var(--color-blue-primary);">Cognitive Games Menu</h2>
+          <span class="game-badge">Assam Themes</span>
         </div>
 
-        <!-- Schedule Reminder Management -->
-        <div class="section-card">
-          <div class="section-title-bar">
-            <h2 class="section-h2">Patient Reminder Schedules</h2>
-            <button type="button" class="btn-primary" onclick="toggleScheduleForm()">+ Schedule New Reminder</button>
-          </div>
+        <div class="games-menu-container">
 
-          <!-- New Reminder Form -->
-          <form id="scheduleForm" class="hidden" style="background-color: var(--bg-subtle); padding: 16px; border: 1px solid var(--border-color); margin-bottom: 16px;" onsubmit="createReminderSchedule(event)">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <div class="form-group">
-                <label class="form-label">Reminder Title</label>
-                <input type="text" id="schTitle" class="form-control" placeholder="e.g. Morning BP Medicine" required>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Type</label>
-                <select id="schType" class="form-control">
-                  <option value="MEDICATION">Medication</option>
-                  <option value="HYDRATION">Hydration</option>
-                  <option value="MEAL">Meal</option>
-                  <option value="EXERCISE">Exercise</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Time (24h)</label>
-                <input type="text" id="schTime" class="form-control" placeholder="08:00" value="08:00" required>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Cadence</label>
-                <select id="schCadence" class="form-control">
-                  <option value="DAILY">Daily</option>
-                  <option value="WEEKLY">Weekly</option>
-                </select>
+          <!-- Game 1: Assamese Cultural Card Match (3 Levels: 2x3, 2x4, 3x4) -->
+          <div class="game-menu-card">
+            <div class="game-card-header">
+              <div class="ease-icon-box green">🎴</div>
+              <div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--text-main);">Match-It Assam Culture</div>
+                <div style="font-size: 14px; color: var(--text-sub);">3 Levels (2×3, 2×4, 3×4) with Wrong Match Counter</div>
               </div>
             </div>
-            <button type="submit" class="btn-primary" style="margin-top: 8px;">Save Schedule</button>
-          </form>
+            <button type="button" class="btn-start-game" onclick="startAssamMatchGame(1)">
+              <span>▶ Play Level 1 (2×3)</span>
+            </button>
+          </div>
 
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Type</th>
-                <th>Schedule Time</th>
-                <th>Cadence</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="caregiverScheduleTable">
-              <!-- Dynamically populated schedules -->
-            </tbody>
-          </table>
+          <!-- Game 2: Randomized Drag & Drop Daily Routine Sequence -->
+          <div class="game-menu-card">
+            <div class="game-card-header">
+              <div class="ease-icon-box gold">📝</div>
+              <div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--text-main);">Randomized Routine Puzzle</div>
+                <div style="font-size: 14px; color: var(--text-sub);">Drag habits into correct morning order</div>
+              </div>
+            </div>
+            <button type="button" class="btn-start-game" style="background-color: var(--color-blue-primary);" onclick="startRoutineGame()">
+              <span>▶ Play Drag Puzzle</span>
+            </button>
+          </div>
+
         </div>
 
-        <!-- Medical RAG Vector Search & Clinical Knowledge Base -->
-        <div class="section-card">
-          <div class="section-title-bar">
-            <h2 class="section-h2">Clinical Knowledge & RAG Search</h2>
+        <!-- Interactive Match-It Play Area -->
+        <div id="playAreaMatch" class="hidden" style="margin-top: 16px;">
+          <div class="game-status-bar">
+            <div><span id="valLevel" style="color: var(--color-green-primary);">Level 1 / 3</span></div>
+            <div>Moves: <span id="valMoves">0</span></div>
+            <div style="color: var(--color-danger);">Wrong: <span id="valWrong">0</span></div>
+            <div>Matched: <span id="valPairs">0/3</span></div>
           </div>
-          <p class="text-secondary">Ask questions about patient history or clinical guidance using vector semantic search:</p>
+
+          <div class="cards-grid-3d" id="matchCardsGrid">
+            <!-- 3D Cards rendered dynamically for active level -->
+          </div>
+
+          <button type="button" class="btn-complete-lg" style="margin-top: 14px; background-color: var(--color-blue-primary);" onclick="closeGamePlay()">
+            ← Back to Games Menu
+          </button>
+        </div>
+
+        <!-- Interactive Drag & Drop Routine Play Area -->
+        <div id="playAreaRoutine" class="hidden" style="margin-top: 16px;">
+          <div class="patient-greeting-card" style="background-color: var(--color-accent-gold-bg); border-color: var(--color-accent-gold);">
+            <div class="greeting-sub-lg" style="font-size: 16px;">🖐️ Drag steps into the correct morning order:</div>
+          </div>
           
-          <form class="search-input-group" onsubmit="handleRagSearch(event)">
-            <input type="text" id="ragQueryInput" class="form-control" style="flex:1;" placeholder="e.g. What are early signs of cognitive decline in MCI?" required>
-            <button type="submit" class="btn-primary">Search RAG</button>
+          <div id="dragRoutineContainer" style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+            <!-- Drag & Drop step elements rendered dynamically -->
+          </div>
+
+          <button type="button" class="btn-start-game" style="width: 100%; margin-top: 14px;" onclick="submitRoutineOrder()">
+            Check My Sequence
+          </button>
+        </div>
+
+      </section>
+
+      <!-- ====================================================================
+           TAB 3: REMINDERS
+           ==================================================================== -->
+      <section id="tabReminders" class="animate-tab-in hidden">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h2 style="font-family: var(--font-serif); font-size: 24px; color: var(--color-green-primary);">Daily Reminders</h2>
+          <span style="font-size: 13px; font-weight: 700; color: var(--text-sub);" id="toggleSummaryText">0/6 Done</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px;" id="reminderListContainer">
+          <!-- Dynamic reminder cards rendered by JS -->
+        </div>
+
+      </section>
+
+      <!-- ====================================================================
+           TAB 4: VOICE COMPANION
+           ==================================================================== -->
+      <section id="tabCompanion" class="animate-tab-in hidden">
+        
+        <div style="text-align: center; margin-bottom: 10px;">
+          <h2 style="font-family: var(--font-serif); font-size: 22px; color: var(--color-blue-primary);">AI Voice Companion</h2>
+          <p style="font-size: 14px; color: var(--text-sub);">Listening & Conversing in Assamese & English</p>
+        </div>
+
+        <div class="voice-wave-container">
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+        </div>
+
+        <div id="companionChatLogs" style="background-color: var(--bg-card); border: 2px solid var(--border-subtle); border-radius: var(--radius-app); padding: 14px; height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+          <div style="background-color: var(--color-blue-bg); color: var(--color-blue-primary); padding: 12px; border-radius: 10px; font-size: 17px; max-width: 88%;">
+            Namaskar! How are you feeling today Grandma Phukan?
+          </div>
+        </div>
+
+        <form style="display: flex; gap: 8px; margin-top: 10px;" onsubmit="sendVoiceChat(event)">
+          <input type="text" id="voiceChatInput" style="flex: 1; padding: 12px; font-size: 16px; border: 2px solid var(--border-subtle); border-radius: 8px;" placeholder="Type or say a message..." required>
+          <button type="submit" class="btn-start-game" style="padding: 12px 16px;">Send</button>
+        </form>
+
+      </section>
+
+      <!-- ====================================================================
+           TAB 5: CAREGIVER PORTAL
+           ==================================================================== -->
+      <section id="tabCaregiver" class="animate-tab-in hidden">
+        
+        <!-- Login Box -->
+        <div id="caregiverLoginBox" class="caregiver-form-card">
+          <h3 style="font-family: var(--font-serif); font-size: 20px; color: var(--color-green-primary);">Caregiver Portal Sign In</h3>
+          <form onsubmit="loginCaregiver(event)" style="display: flex; flex-direction: column; gap: 10px;">
+            <label style="font-size: 13px; font-weight: 700;">Phone Number:</label>
+            <input type="text" id="cgPhone" style="padding: 10px; font-size: 15px; border: 1px solid var(--border-strong); border-radius: 6px;" value="919876543002" required>
+            <label style="font-size: 13px; font-weight: 700;">Password:</label>
+            <input type="password" id="cgPass" style="padding: 10px; font-size: 15px; border: 1px solid var(--border-strong); border-radius: 6px;" value="DemoPass123" required>
+            <button type="submit" class="btn-start-game">Sign In to Dashboard</button>
           </form>
+        </div>
 
-          <div id="ragResultBox" class="rag-response-box hidden">
-            <!-- RAG response output -->
+        <!-- Caregiver Live Dashboard -->
+        <div id="caregiverDashboardView" class="hidden" style="display: flex; flex-direction: column; gap: 12px;">
+          <div class="patient-greeting-card" style="background-color: var(--color-blue-bg); border-color: var(--color-blue-light);">
+            <div class="greeting-text-lg" style="color: var(--color-blue-primary); font-size: 20px;">Patient Roster & Controls</div>
+            <div class="greeting-sub-lg" style="font-size: 15px;">Grandma Phukan (Assam MCI Cohort)</div>
+          </div>
+
+          <!-- Add Custom Reminder Form Panel -->
+          <div class="caregiver-form-card">
+            <h4 style="font-size: 16px; font-weight: 700; color: var(--color-green-primary);">+ Add Custom Patient Reminder</h4>
+
+            <form onsubmit="addCustomReminder(event)" style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+              <input type="text" id="customTitle" style="padding: 9px; font-size: 14px; border: 1px solid var(--border-strong); border-radius: 6px;" placeholder="Reminder Title (e.g. Family Call)" required>
+              <div style="display: flex; gap: 8px;">
+                <select id="customType" style="flex:1; padding: 8px; font-size: 14px; border: 1px solid var(--border-strong); border-radius: 6px;">
+                  <option value="Breakfast">🍳 Breakfast</option>
+                  <option value="Lunch">🍲 Lunch</option>
+                  <option value="Dinner">🍛 Dinner</option>
+                  <option value="Family Call">📞 Family Call</option>
+                  <option value="Medication">💊 Medication</option>
+                  <option value="Hydration">🍵 Tea & Water</option>
+                  <option value="Custom">⭐ Custom Task</option>
+                </select>
+                <input type="time" id="customTime" style="padding: 8px; font-size: 14px; border: 1px solid var(--border-strong); border-radius: 6px;" value="18:00" required>
+              </div>
+              <button type="submit" class="btn-start-game" style="padding: 10px; font-size: 15px; margin-top: 4px;">
+                Add Custom Reminder
+              </button>
+            </form>
+          </div>
+
+          <div class="metric-box-sm">
+            <div><strong>7-Day Accuracy Score</strong></div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--color-green-primary);">86.4%</div>
+          </div>
+
+          <div class="metric-box-sm">
+            <div><strong>Reminder Adherence</strong></div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--color-green-primary);">94.0%</div>
+          </div>
+
+          <div class="caregiver-form-card">
+            <h4 style="font-size: 16px; color: var(--color-green-primary);">Clinical Vector Search</h4>
+            <form onsubmit="searchRagDocs(event)" style="display: flex; gap: 6px;">
+              <input type="text" id="ragQuery" style="flex:1; padding: 8px; font-size: 14px; border: 1px solid var(--border-strong); border-radius: 6px;" placeholder="Search patient history..." required>
+              <button type="submit" class="btn-start-game" style="padding: 8px 12px; font-size: 14px;">Search</button>
+            </form>
+            <div id="ragOut" style="font-size: 13px; color: var(--text-sub); margin-top: 6px;" class="hidden"></div>
           </div>
         </div>
 
-        <!-- Compliance & Audit Log Viewer -->
-        <div class="section-card">
-          <div class="section-title-bar">
-            <h2 class="section-h2">DPDP Compliance & Security Audit Log</h2>
-            <button type="button" class="btn-secondary" onclick="loadAuditLogs()">Refresh Audit Trail</button>
-          </div>
+      </section>
 
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Timestamp</th>
-                <th>Actor / User</th>
-                <th>Action</th>
-                <th>Purpose Scope</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody id="auditLogTable">
-              <!-- Dynamically loaded logs -->
-            </tbody>
-          </table>
-        </div>
+    </main>
 
-      </div>
+    <!-- Flutter Bottom Navigation Bar -->
+    <nav class="flutter-bottom-nav">
+      
+      <button type="button" class="nav-item-btn active" id="navHome" onclick="switchNavTab('home')">
+        <div class="nav-icon">🏠</div>
+        <span>Home</span>
+      </button>
 
-    </section>
+      <button type="button" class="nav-item-btn" id="navGames" onclick="switchNavTab('games')">
+        <div class="nav-icon">🎮</div>
+        <span>Games</span>
+      </button>
 
-  </main>
+      <button type="button" class="nav-item-btn" id="navReminders" onclick="switchNavTab('reminders')">
+        <div class="nav-icon">⏰</div>
+        <span>Reminders</span>
+      </button>
+
+      <button type="button" class="nav-item-btn" id="navCompanion" onclick="switchNavTab('companion')">
+        <div class="nav-icon">💬</div>
+        <span>Companion</span>
+      </button>
+
+      <button type="button" class="nav-item-btn" id="navCaregiver" onclick="switchNavTab('caregiver')">
+        <div class="nav-icon">🩺</div>
+        <span>Caregiver</span>
+      </button>
+
+    </nav>
+
+  </div>
 
   <script src="/static/app.js"></script>
 </body>
