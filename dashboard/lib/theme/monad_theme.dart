@@ -24,6 +24,12 @@ class Monad {
   static const Color ash = Color(0xFFCECAC8);
   static const Color white = Color(0xFFFFFFFF);
 
+  // ===== NE India palette (textiles + landscapes) =====
+  static const Color teaGreen = Color(0xFF2D5A27);
+  static const Color eriGold = Color(0xFFC9A227);
+  static const Color terracotta = Color(0xFFC0704A);
+  static const Color indigo = Color(0xFF3D2B7A);
+
   // ===== Font families =====
   static const String serifFamily = 'Newsreader'; // Untitled Serif substitute
   static const String monoFamily = 'JetBrainsMono'; // ABC Diatype Mono substitute
@@ -105,6 +111,11 @@ class Monad {
 
   static RoundedRectangleBorder get softShape =>
       RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusMin), side: const BorderSide(color: ash, width: 1));
+
+  /// Card shadow: soft, visible on parchment.
+  static const List<BoxShadow> cardShadow = [
+    BoxShadow(color: Color(0x1F000000), blurRadius: 10, spreadRadius: 0, offset: Offset(0, 2)),
+  ];
 
   /// ThemeData for the whole app.
   static ThemeData theme() {

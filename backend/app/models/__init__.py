@@ -5,10 +5,12 @@ from app.models.all_models import (
     PatientProfile, CaregiverPatientLink, GameSession, DifficultyAdjustmentLog,
     ReminderSchedule, ReminderEvent, AlertFlag, SyncQueue,
     SymptomLog, MedicalDocument, DocumentChunk, VoiceCompanionConfig, WeeklyReport,
+    UserDeviceToken, NotificationDelivery,
     CognitiveBaselineEnum, RelationshipTypeEnum, PermissionTierEnum,
     GameTypeEnum, ReminderTypeEnum, ReminderStatusEnum, AcknowledgmentMethodEnum,
     AlertTriggerTypeEnum, AlertSeverityEnum, SyncResourceTypeEnum, SyncOperationEnum,
     SymptomEntrySourceEnum, DocumentTypeEnum, EmbeddingStatusEnum,
+    NotificationDeliveryStatusEnum, NotificationKindEnum,
 )
 
 __all__ = [
@@ -19,5 +21,5 @@ __all__ = [
     "ReminderSchedule", "ReminderEvent",
     "AlertFlag", "SyncQueue",
     "SymptomLog", "MedicalDocument", "DocumentChunk", "VoiceCompanionConfig",
-    "WeeklyReport",
+    "WeeklyReport", "UserDeviceToken", "NotificationDelivery",
 ]

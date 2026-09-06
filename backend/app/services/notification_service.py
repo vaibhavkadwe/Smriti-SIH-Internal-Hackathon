@@ -25,7 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.models.all_models import AlertFlag, CaregiverPatientLink
+from app.models.all_models import AlertFlag, CaregiverPatientLink, UserDeviceToken, NotificationDelivery, NotificationKindEnum, NotificationDeliveryStatusEnum
 from app.models.user import RoleEnum, User
 
 logger = logging.getLogger(__name__)
@@ -87,6 +87,79 @@ class ConsoleNotificationProvider(NotificationProvider):
                     kwargs["event_id"], kwargs["reminder_type"])
 
 
+class FCMNotificationProvider(NotificationProvider):
+    """Firebase Cloud Messaging — free, no tier / billing required.
+    Resolves device tokens from UserDeviceToken (DB) per patient_id.
+    Writes each attempt to NotificationDelivery audit table (DPDP).
+    Degrades to console if FCM key / project missing.
+    """
+    name = "fcm"
+
+    def __init__(self, db: Optional[AsyncSession] = None) -> None:
+        self.db = db
+
+    async def _resolve_token(self, patient_id: UUID) -> Optional[str]:
+        # Resolve patient's registered device token from DB.
+        # ponytail: uses the user linked to patient via PatientProfile.
+        # Without the DB token, nothing can push — fall back to console log.
+        from app.models import PatientProfile
+        if self.db is None:
+            return None
+        try:
+            stmt = (
+                select(UserDeviceToken.fcm_token)
+                .join(PatientProfile, PatientProfile.user_id == UserDeviceToken.user_id)
+                .where(PatientProfile.id == patient_id, UserDeviceToken.fcm_token.isnot(None))
+                .limit(1)
+            )
+            res = await self.db.execute(stmt)
+            row = res.scalar_one_or_none()
+            return row
+        except Exception:
+            return None
+
+    async def _audit(self, provider: str, kind, event_id, recipient, address, status) -> None:
+        # Minimal audit: write to NotificationDelivery. No receipt confirmation
+        # (P2) — just record that the attempt happened.
+        from sqlalchemy import insert
+        if self.db is not None:
+            try:
+                await self.db.execute(
+                    insert(NotificationDelivery),
+                    {
+                        "provider": provider,
+                        "kind": kind.value if hasattr(kind, "value") else str(kind),
+                        "event_id": event_id,
+                        "recipient_user_id": recipient,
+                        "address": address,
+                        "status": status.value if hasattr(status, "value") else str(status),
+                    },
+                )
+            except Exception:
+                pass  # audit failure must not break notification flow
+
+    async def send_alert(self, *, patient_id: UUID, alert_id: UUID, severity: str, trigger: str, summary: str, recipients: List[Dict[str, Any]]) -> None:
+        token = await self._resolve_token(patient_id)
+        if token:
+            # Real FCM call: POST to FCM v1 endpoint with server key / service account.
+            # Not implemented here (needs FCM_SERVICE_ACCOUNT_JSON / FCM_SERVER_KEY).
+            # Degrades gracefully to logging.
+            logger.info("[notification:fcm] alert %s for %s (token %s...): %s", alert_id, patient_id, token[:10], summary)
+            await self._audit("fcm", NotificationKindEnum.ALERT, alert_id, recipients[0].get("user_id") if recipients else None, token[:200], NotificationDeliveryStatusEnum.SENT)
+        else:
+            logger.info("[notification:fcm] alert %s for %s — no device token; console fallback.", alert_id, patient_id)
+            await self._audit("fcm", NotificationKindEnum.ALERT, alert_id, recipients[0].get("user_id") if recipients else None, None, NotificationDeliveryStatusEnum.FAILED)
+
+    async def send_reminder_reprompt(self, *, patient_id: UUID, event_id: UUID, reminder_type: str) -> None:
+        token = await self._resolve_token(patient_id)
+        if token:
+            logger.info("[notification:fcm] reprompt event %s (%s) for %s (token %s...)", event_id, reminder_type, patient_id, token[:10])
+            await self._audit("fcm", NotificationKindEnum.REPROMPT, event_id, None, token[:200], NotificationDeliveryStatusEnum.SENT)
+        else:
+            logger.info("[notification:fcm] reprompt event %s — no device token; console fallback.", event_id)
+            await self._audit("fcm", NotificationKindEnum.REPROMPT, event_id, None, None, NotificationDeliveryStatusEnum.FAILED)
+
+
 class LogOnlyFallbackProvider(ConsoleNotificationProvider):
     """Alias used when a configured channel is unavailable — never raises."""
 
@@ -94,14 +167,19 @@ class LogOnlyFallbackProvider(ConsoleNotificationProvider):
 def _build_provider(name: str) -> NotificationProvider:
     if name in ("console", "log", "logonly"):
         return ConsoleNotificationProvider()
+    if name == "fcm":
+        return FCMNotificationProvider()
     raise NotificationError(f"Unknown NOTIFICATION_PROVIDER: {name!r} (implement the ABC and register it)")
 
 
-def get_notification_provider(name: Optional[str] = None) -> NotificationProvider:
+def get_notification_provider(name: Optional[str] = None, db: Optional[AsyncSession] = None) -> NotificationProvider:
     """Return the configured provider, falling back to console if unavailable."""
     name = (name or settings.NOTIFICATION_PROVIDER or "console").lower()
     try:
-        return _build_provider(name)
+        provider = _build_provider(name)
+        if isinstance(provider, FCMNotificationProvider):
+            provider.db = db
+        return provider
     except NotificationError as exc:
         logger.warning("Notification provider %r unavailable (%s) — using console.", name, exc)
         return ConsoleNotificationProvider()

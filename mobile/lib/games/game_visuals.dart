@@ -48,7 +48,54 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/monad_theme.dart';
-import 'cultural_art.dart';
+
+/// Custom flat illustrations (CustomPainter) for cultural items.
+/// Replaces missing `cultural_art.dart` and Material-icon placeholders.
+class CulturalArtPainter extends CustomPainter {
+  final String key;
+  final Color color;
+  CulturalArtPainter(this.key, {required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()..color = color..style = PaintingStyle.fill;
+    final w = size.width, h = size.height, cx = w / 2, cy = h / 2;
+    if (key == 'rhino') {
+      // Rounded body + horn
+      canvas.drawRRect(Rect.fromLTWH(cx - 12, cy - 6, 24, 14), Radius.circular(6), p);
+      canvas.drawPath(Path()..moveTo(cx + 6, cy - 8)..lineTo(cx + 14, cy - 14)..lineTo(cx + 10, cy - 4)..close(), Paint()..color = terracotta..style = PaintingStyle.fill);
+    } else if (key == 'assam_tea_leaf') {
+      // Oval leaf + stem
+      canvas.drawOval(Rect.fromLTWH(cx - 10, cy - 8, 20, 14), p);
+      canvas.drawLine(Offset(cx, cy + 6), Offset(cx, cy + 16), Paint()..strokeWidth = 2..color = teaGreen);
+    } else if (key == 'jaapi') {
+      // Fan arc
+      canvas.drawArc(Rect.fromLTWH(cx - 14, cy - 10, 28, 20), 0.2 * 3.14, 2.6 * 3.14, false, p);
+    } else if (key == 'eri_silk') {
+      // Folded rectangle + cross
+      canvas.drawRRect(Rect.fromLTWH(cx - 10, cy - 8, 20, 16), Radius.circular(4), p);
+      canvas.drawLine(Offset(cx - 6, cy - 2), Offset(cx + 6, cy + 2), Paint()..strokeWidth = 1.5..color = eriGold);
+    } else if (key == 'dhol') {
+      // Cylinder
+      canvas.drawRRect(Rect.fromLTWH(cx - 10, cy - 4, 20, 14), Radius.circular(6), p);
+      canvas.drawOval(Rect.fromLTWH(cx - 10, cy - 4, 20, 6), Paint()..color = terracotta..style = PaintingStyle.fill);
+    } else if (key == 'bamboo_craft') {
+      // 3 vertical bars
+      for (var i = -1; i <= 1; i++) canvas.drawRRect(Rect.fromLTWH(cx + i * 6 - 2, cy - 8, 4, 16), Radius.circular(2), p);
+    } else if (key == 'naga_shawl') {
+      // Diamond grid
+      canvas.drawPath(Path()..moveTo(cx, cy - 10)..lineTo(cx + 10, cy)..lineTo(cx, cy + 10)..lineTo(cx - 10, cy)..close(), p);
+    } else {
+      // Generic star / flower fallback
+      final pts = [Offset(cx, cy - 10), Offset(cx + 6, cy - 2), Offset(cx + 10, cy + 4), Offset(cx + 2, cy + 8), Offset(cx - 6, cy + 2)];
+      final path = Path()..moveTo(pts[0].dx, pts[0].dy); for (var i = 1; i < pts.length; i++) path.lineTo(pts[i].dx, pts[i].dy); path.close();
+      canvas.drawPath(path, p);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => old is! CulturalArtPainter || old.key != key || old.color != color;
+}
 
 class GameVisuals {
   GameVisuals._();
@@ -99,24 +146,23 @@ class GameVisuals {
   /// ship PNGs and add their keys here.
   static const Set<String> availableImages = {};
 
-  /// The visual for a card face, in order: commissioned PNG, painted
-  /// cultural art ([CulturalArt]), mapped Material icon. Never crashes.
+  /// The visual for a card face — CustomPainter illustration in palette.
   static Widget face({
     required String imageKey,
     required String label,
     double iconSize = 44,
   }) {
-    if (availableImages.contains(imageKey)) {
-      return Image.asset(
-        '$_assetDir/$imageKey.png',
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => _iconFace(imageKey, iconSize),
-      );
-    }
-    if (CulturalArt.hasArt(imageKey)) {
-      return CulturalArt(imageKey, size: iconSize);
-    }
-    return _iconFace(imageKey, iconSize);
+    // Pick palette color per item family
+    Color c = Monad.indigo;
+    if (imageKey.contains('tea') || imageKey.contains('bamboo')) c = Monad.teaGreen;
+    else if (imageKey.contains('silk') || imageKey.contains('eri')) c = Monad.eriGold;
+    else if (imageKey.contains('rhino') || imageKey.contains('red_panda')) c = Color(0xFF8B6914);
+    else if (imageKey.contains('jaapi') || imageKey.contains('dhol') || imageKey.contains('bihu') || imageKey.contains('horn')) c = Monad.terracotta;
+    else if (imageKey.contains('shawl')) c = Monad.indigo;
+    return CustomPaint(
+      size: Size(iconSize, iconSize),
+      painter: CulturalArtPainter(imageKey, color: c),
+    );
   }
 
   static Widget _iconFace(String imageKey, double size) => Icon(

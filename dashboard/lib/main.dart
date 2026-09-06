@@ -15,6 +15,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'theme/monad_theme.dart';
+import 'widgets/risk_screening_card.dart';
 
 const String _baseUrl = String.fromEnvironment(
   'API_BASE_URL',
@@ -480,6 +481,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   String? _error;
   List<Map<String, dynamic>>? _schedules;
   List<Map<String, dynamic>>? _auditLogs;
+  Map<String, dynamic>? _riskScreeningResult;
   bool _isClinicalView(Map s) => s['view'] == 'clinical';
 
   @override
@@ -845,6 +847,9 @@ class _DashboardScreenState extends State<_DashboardScreen> {
               subtitle: Text('Reminder flag: ${flags['high_missed_reminders'] == true ? '3+ missed in 7 days' : 'none'}', style: Monad.monoBodySm),
             ),
           ),
+        // Cognitive risk screening — clinical view only
+        const SizedBox(height: 12),
+        RiskScreeningCard(result: _riskScreeningResult),
       ],
     );
   }

@@ -35,6 +35,7 @@ class PatientProfile(Base):
     region = Column(String(100), nullable=True)
     district = Column(String(100), nullable=True)
     routine = Column(JSON, nullable=True)
+    clinical_features = Column(JSON, nullable=True)  # DEMO ONLY — placeholder for 32 screening inputs (age/bmi/mmse/etc). Real clinical intake form (ASHA/clinician tier) still needed.
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -237,6 +238,34 @@ class WeeklyReport(Base):
     week_start = Column(DateTime, nullable=False, index=True)  # Monday 00:00 UTC
     generated_at = Column(DateTime, default=func.now(), nullable=False)
     report_json = Column(JSON, nullable=False)  # ReportService summary payload
+
+class UserDeviceToken(Base):
+    __tablename__ = "user_device_tokens"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    fcm_token = Column(String(500), nullable=True)
+    phone = Column(String(50), nullable=True)
+    platform = Column(String(20), nullable=False, default="android")
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+class NotificationDeliveryStatusEnum(str, Enum):
+    SENT = "sent"
+    FAILED = "failed"
+
+class NotificationKindEnum(str, Enum):
+    REPROMPT = "reprompt"
+    ALERT = "alert"
+
+class NotificationDelivery(Base):
+    __tablename__ = "notification_deliveries"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    provider = Column(String(20), nullable=False)
+    kind = Column(SQLEnum(NotificationKindEnum, values_callable=enum_values), nullable=False)
+    event_id = Column(UUID(as_uuid=True), nullable=True)
+    recipient_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    address = Column(String(500), nullable=True)
+    status = Column(SQLEnum(NotificationDeliveryStatusEnum, values_callable=enum_values), nullable=False, default=NotificationDeliveryStatusEnum.SENT)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
 
 class VoiceCompanionConfig(Base):
     __tablename__ = "voice_companion_configs"

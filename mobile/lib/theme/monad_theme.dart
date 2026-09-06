@@ -24,6 +24,12 @@ class Monad {
   static const Color ash = Color(0xFFCECAC8);
   static const Color white = Color(0xFFFFFFFF);
 
+  // ===== NE India palette (textiles + landscapes) =====
+  static const Color teaGreen = Color(0xFF2D5A27);   // tea-garden canopy
+  static const Color eriGold = Color(0xFFC9A227);     // Eri-silk fiber
+  static const Color terracotta = Color(0xFFC0704A);  // NER clay
+  static const Color indigo = Color(0xFF3D2B7A);     // indigo dye
+
   // ===== Font families =====
   static const String serifFamily = 'Newsreader'; // Untitled Serif substitute
   static const String monoFamily = 'JetBrainsMono'; // ABC Diatype Mono substitute
@@ -135,9 +141,9 @@ class Monad {
     }
   }
 
-  /// Ambient shadow, permitted on game card faces and status chips only.
+  /// Card shadow: soft, visible on parchment. Only on cards / chips per DESIGN.md.
   static const List<BoxShadow> cardShadow = [
-    BoxShadow(color: Color(0x1A000000), blurRadius: 10, offset: Offset.zero),
+    BoxShadow(color: Color(0x1F000000), blurRadius: 10, spreadRadius: 0, offset: Offset(0, 2)),
   ];
 
   /// Patient-facing body floor: 20px (DESIGN.md --text-body-lg).

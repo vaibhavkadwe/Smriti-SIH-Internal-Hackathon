@@ -119,6 +119,98 @@ def _baseline(value: str) -> CognitiveBaselineEnum:
         )
 
 
+from app.services.risk_screening_service import run_inference, FEATURE_NAMES, FEATURE_DTYPE_MAP
+
+
+# ============= Risk Screening Endpoint =============
+
+
+class RiskScreeningRequest(BaseModel):
+    """34 feature fields exactly as model_input_guide.json defines."""
+    model_config = ConfigDict(extra="forbid")
+
+    # Use the feature names directly; this avoids hard-coding 34 fields.
+    # Validation uses FEATURE_NAMES from feature_names.json.
+
+    Age: Optional[float] = None
+    Gender: Optional[int] = None
+    Ethnicity: Optional[int] = None
+    EducationLevel: Optional[int] = None
+    BMI: Optional[float] = None
+    Smoking: Optional[int] = None
+    AlcoholConsumption: Optional[float] = None
+    PhysicalActivity: Optional[float] = None
+    DietQuality: Optional[float] = None
+    SleepQuality: Optional[float] = None
+    FamilyHistoryAlzheimers: Optional[int] = None
+    CardiovascularDisease: Optional[int] = None
+    Diabetes: Optional[int] = None
+    Depression: Optional[int] = None
+    HeadInjury: Optional[int] = None
+    Hypertension: Optional[int] = None
+    SystolicBP: Optional[int] = None
+    DiastolicBP: Optional[int] = None
+    CholesterolTotal: Optional[float] = None
+    CholesterolLDL: Optional[float] = None
+    CholesterolHDL: Optional[float] = None
+    CholesterolTriglycerides: Optional[float] = None
+    MMSE: Optional[float] = None
+    FunctionalAssessment: Optional[float] = None
+    MemoryComplaints: Optional[int] = None
+    BehavioralProblems: Optional[int] = None
+    ADL: Optional[float] = None
+    Confusion: Optional[int] = None
+    Disorientation: Optional[int] = None
+    PersonalityChanges: Optional[int] = None
+    DifficultyCompletingTasks: Optional[int] = None
+    Forgetfulness: Optional[int] = None
+
+
+class RiskScreeningResponse(BaseModel):
+    status: str
+    risk_score: Optional[float] = None
+    probability: Optional[float] = None
+    tier: Optional[str] = None
+    feature_count: Optional[int] = None
+    note: Optional[str] = None
+    errors: Optional[List[str]] = None
+    message: Optional[str] = None
+
+
+@router.post("/{patient_id}/risk-screening", response_model=RiskScreeningResponse)
+async def risk_screening(
+    patient_id: UUID,
+    body: RiskScreeningRequest,
+    current_user: User = Depends(require_caregiver_or_staff),
+    db: AsyncSession = Depends(get_db),
+):
+    """POST /patients/{id}/risk-screening
+
+    Accepts the 34 features defined by the teammate's feature_names.json.
+    Applies scaler.pkl, runs .keras inference, returns probability (0-1) +
+    a 0-100 score. Degrades gracefully when TF is unavailable.
+    """
+    patient = await _get_patient(db, patient_id)
+    if patient is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    # Build a clean dict from Pydantic model; skip None fields so validation
+    # can flag missing ones explicitly.
+    raw: Dict[str, Any] = {}
+    for f in FEATURE_NAMES:
+        value = getattr(body, f, None)
+        if value is not None:
+            raw[f] = value
+
+    result = run_inference(raw)
+    if result.get("status") == "validation_failed":
+        return RiskScreeningResponse(
+            status="validation_failed",
+            errors=result.get("errors", []),
+        )
+    return RiskScreeningResponse(**result)
+
+
 # ============= Endpoints =============
 
 
