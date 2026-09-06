@@ -480,6 +480,10 @@ class _CardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final revealed = card.isFlipped || card.isMatched;
+    // Stable per-pair tint so matching pairs share a hue family; state is
+    // still conveyed by border + art + label, never color alone.
+    final tint =
+        Monad.faceTints[card.pairId.hashCode % Monad.faceTints.length];
     return Semantics(
       button: true,
       label: revealed
@@ -493,9 +497,10 @@ class _CardView extends StatelessWidget {
             color: card.isMatched
                 ? _NERPalette.matchedBg
                 : revealed
-                    ? _NERPalette.cardFace
+                    ? tint
                     : _NERPalette.cardBack,
-            borderRadius: BorderRadius.circular(Monad.radiusMin),
+            borderRadius: BorderRadius.circular(Monad.radiusCard),
+            boxShadow: revealed || card.isMatched ? Monad.cardShadow : null,
             border: Border.all(
               // Card state is conveyed by border + content, never color
               // alone: back = ash hairline + motif icon, flipped = thick
@@ -523,16 +528,16 @@ class _CardView extends StatelessWidget {
                         GameVisuals.face(
                           imageKey: card.imageKey,
                           label: card.labelEn,
-                          iconSize: 40,
+                          iconSize: 48,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           card.labelLocal,
                           textAlign: TextAlign.center,
                           maxLines: 2,
-                          style: Monad.monoCaption.copyWith(
+                          overflow: TextOverflow.ellipsis,
+                          style: Monad.patientBody.copyWith(
                             color: _NERPalette.faceText,
-                            fontSize: 12,
                           ),
                         ),
                       ],

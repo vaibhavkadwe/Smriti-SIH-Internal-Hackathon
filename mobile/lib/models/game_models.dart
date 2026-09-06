@@ -60,6 +60,17 @@ class MatchItCard {
   );
 }
 
+/// Normalize a server card to a registry key: prefer item_id, else the
+/// image filename stem, else the English name.
+String _artKeyFor(String itemId, String? imageUrl, String nameEn) {
+  if (itemId.isNotEmpty) return itemId;
+  if (imageUrl != null && imageUrl.isNotEmpty) {
+    final stem = imageUrl.split('/').last.split('.').first;
+    if (stem.isNotEmpty) return stem;
+  }
+  return nameEn;
+}
+
 /// Represents a generated Match It board configuration.
 class MatchItBoard {
   final String packId;
@@ -105,7 +116,11 @@ class MatchItBoard {
       cards.add(MatchItCard(
         id: '${c.cardId}',
         pairId: c.itemId,
-        imageKey: c.imageUrl ?? c.nameEn,
+        // Server sends item_id + full asset path; the art/icon registries
+        // are keyed by bare item id — normalize here so every caller (art,
+        // icons, pair tinting) resolves. Fixes online boards rendering the
+        // help-outline fallback while offline boards showed real art.
+        imageKey: _artKeyFor(c.itemId, c.imageUrl, c.nameEn),
         labelEn: c.nameEn,
         labelLocal: c.nameAs.isEmpty ? c.nameEn : c.nameAs,
       ));

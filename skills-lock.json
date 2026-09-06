@@ -31,6 +31,12 @@
       "skillPath": ".kilocode/skills/gsd/SKILL.md",
       "computedHash": "d600a82e62d25a86ce0b5d114183650abf66ad842d112f63852c0dd9d7d90bcf"
     },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/impeccable/SKILL.md",
+      "computedHash": "f9afde6d0c3896220562e85b41226188b667f34b8c560a6456d6dba676d0d096"
+    },
     "improve-codebase-architecture": {
       "source": "mattpocock/skills",
       "sourceType": "github",

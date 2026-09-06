@@ -5,7 +5,7 @@
 
 ---
 
-## Implementation Status (Reconciled 2026-09-05)
+## Implementation Status (Reconciled 2026-09-06)
 
 The actual repo state is now the phase docs' own source of truth — all 12 roadmap
 phases are implemented and tested. Tracker/detail docs that were written *before*
@@ -15,7 +15,7 @@ those points; treat the code and this file as authoritative.
 
 | Phase | Scope | Status | Evidence |
 |---|---|---|---|
-| 1–7 | Backend scaffold, 15 data models, auth/RBAC, games engine, reminders + escalation, dashboard analytics, sync & patient endpoints | ✅ Implemented + tested | Migration `0001_initial_schema`; all models/services/routes; gate tests |
+| 1–7 | Backend scaffold, 15 data models, auth/RBAC, games engine, reminders + escalation, dashboard analytics, sync & patient endpoints | ✅ Implemented + tested | Migrations `0001_initial_schema` → `0003_refresh_rotation`; all models/services/routes; gate tests |
 | 8 | Real Bhashini (ULCA) speech provider | ✅ Implemented | `language_service.py`; config-driven (`auto\|bhashini\|mock`); live call requires API keys |
 | 9 | Voice companion (LLM) | ✅ Implemented | `llm_client.py` (OpenRouter default / Anthropic alt), DB-versioned prompts, auth + config endpoints, canned-reply fallback |
 | 10 | RAG pipeline for medical documents | ✅ Implemented | chunking + stable embeddings + cited answers; PDF/text file upload; extractive fallback without LLM keys |
@@ -23,14 +23,20 @@ those points; treat the code and this file as authoritative.
 | 12 | Production hardening | ✅ Implemented | rate limiting (Redis+fallback), CORS whitelist, placeholder-secret refusal, CI, E2E smoke vs real Postgres |
 | — | Flutter UIs wired to backend (mobile + caregiver dashboard) | ✅ Compiled in CI | `flutter pub get` + `build_runner` + `flutter analyze` green in `.github/workflows/ci.yml` |
 | — | Offline-first mobile layer (drift + sync outbox + local reminders) | ✅ Implemented | `app_database.g.dart` committed; screens use offline fallbacks; local notifications scheduled |
+| — | Monad design system across all three surfaces | ✅ Implemented | `DESIGN.md` (token spec) → `{mobile,dashboard}/lib/theme/monad_theme.dart`; Newsreader + JetBrainsMono bundled; `backend/static/` landing page restyled |
+| — | Client-side adaptive-difficulty + telemetry engine | ✅ Implemented + tested | `mobile/lib/games/game_analytics_engine.dart` (pure Dart, no Flutter imports) + `mobile/test/game_analytics_engine_test.dart` |
 
-Tests: **119 pytest** pass (`cd backend && python -m pytest app/tests tests -q`,
+Tests: **130 pytest** pass + 1 skipped (`cd backend && python3 -m pytest app/tests tests -q`,
 SQLite, no DB needed) across the API, security gates (phase0/11/12), reminder
 engine, retention, sync consumer, RAG, document upload, LLM client, embedding
-provider, notification + voice companion. Plus `python test_phase2_services.py`
-(standalone) and `python smoke_e2e.py` (live end-to-end walk against a real
-Postgres — auth → profile → game → reminders → dashboard → sync → companion →
-RAG → consent).
+provider, notification + voice companion. `test_document_upload.py::test_upload_real_pdf`
+needs `pypdf` installed (in `requirements.txt`; it is skipped-by-failure in a bare
+env). Plus `python3 test_phase2_services.py` (standalone), `python3 smoke_e2e.py`
+(live end-to-end walk against a real Postgres — auth → profile → game → reminders
+→ dashboard → sync → companion → RAG → consent), and on the Flutter side
+`flutter test` (model parsing + analytics engine) plus
+`mobile/integration_test/app_flow_test.dart` (on-device, needs an emulator and a
+backend at `10.0.2.2:8000`).
 
 ---
 
@@ -102,6 +108,20 @@ Hard guard: `OPENROUTER_FREE_ONLY=true` refuses any model slug that is not
 - Font sizes, interaction patterns designed for clarity (no tiny buttons)
 - Reminder escalation built for confusion/forgetfulness, not severe impairment
 - v2 will extend to dementia-friendly modes (larger text, simpler interactions, multimedia prompts)
+
+**Difficulty grids (revised 2026-09-06, deliberately gentler than the original spec):**
+
+| Level | Match It (`content_packs.py`) | Routine Sequencing (`routine_service.py`) |
+|---|---|---|
+| 1 | 2 pairs / 4 cards (2×2) | 3 steps, hints + icons |
+| 2 | 4 pairs / 8 cards (4×2) | 4 steps, hints + icons |
+| 3 | 6 pairs / 12 cards (4×3) | 6 steps, icons only (no hints) |
+
+Icons now show at every level and hints through level 2 — the earlier
+"text-only hard mode" tested as too abrupt for the MCI cohort. Content pool:
+festivals, fruits/flora, and heritage packs (4-vernacular labels + region per
+item, currently 10 / 10 / 12 items). Default routine is an 11-step Assamese day
+(includes `dress_attire` — traditional attire).
 
 ---
 
@@ -216,8 +236,13 @@ Hard guard: `OPENROUTER_FREE_ONLY=true` refuses any model slug that is not
 **Decision:** JWT (access + refresh tokens), server-side role-based enforcement
 
 **Tokens:**
-- Access: 15 minutes (short-lived, secure)
-- Refresh: 7 days (allows re-login without password in low-connectivity areas)
+- Access: 15 minutes (short-lived, secure), stateless
+- Refresh: 7 days, **single-use with rotation** — each token carries a `jti`, and
+  `users.refresh_jti` holds the only one currently accepted (migration
+  `0003_refresh_rotation`). `/auth/refresh` issues a new pair and rotates the jti;
+  presenting a reused or superseded token clears `refresh_jti` outright, killing
+  the whole chain (replay defence). Login supersedes any prior token; `/auth/logout`
+  revokes by nulling the jti.
 
 **Roles:**
 - `patient` — plays games, acknowledges reminders
@@ -233,8 +258,10 @@ Hard guard: `OPENROUTER_FREE_ONLY=true` refuses any model slug that is not
 - **No implicit access** — every caregiver-to-patient access is gated and audited
 
 **Impact:**
-- Stateless auth scales horizontally
-- Rural field workers can re-login with refresh token if token expires
+- Access tokens stay stateless, so verification scales horizontally; only refresh
+  costs one row read (the deliberate trade for replay detection)
+- Rural field workers can re-login with refresh token if token expires — but the
+  old token dies at that moment, so a copied token is useless
 - Audit trail captures who accessed what patient data and when
 
 ---
@@ -341,22 +368,33 @@ mobile/lib/
 ├── models/                   # shared_models.dart (358L), game_models.dart (485L)
 ├── database/                 # app_database.dart (drift) + app_database.g.dart (committed codegen)
 ├── data/                     # local_content_packs.dart (offline NER packs fallback)
+├── games/                    # game_analytics_engine.dart (adaptive difficulty + risk flags,
+│                             # pure Dart), game_labels.dart, game_visuals.dart
+├── theme/monad_theme.dart    # Monad tokens (see DESIGN.md) — colors, type, spacing, radii
 ├── widgets/                  # trend_chart.dart (unused; available for dashboard)
 ├── services/                 # api_service, auth_session, offline_sync_service, reminder_service,
 │                             # reminder_scheduler, routine_service, match_it_service
 └── screens/                  # auth, match_it, pack_picker, routine, reminders,
                               # voice_companion (text chat, 4 langs), caregiver_dashboard (role-gated)
+
+mobile/integration_test/app_flow_test.dart   # on-device flow (emulator + backend at 10.0.2.2:8000)
+mobile/android/app/src/debug/                # debug-only cleartext HTTP to 10.0.2.2 + localhost
+                                             # (network_security_config.xml); release stays TLS-only
 ```
 
 ### Flutter Web — caregiver dashboard
 ```
 dashboard/
-└── lib/main.dart             # single-file app: login, roster, summary tiles, alerts, insights
+├── lib/main.dart             # single-file app: login, roster, summary tiles, alerts, insights
+└── lib/theme/monad_theme.dart  # Monad tokens (copy of mobile's, minus the game tints)
 ```
 
 ### Other
 ```
+DESIGN.md                     # Monad style reference — the token source of truth both
+                              # monad_theme.dart files mirror
 demo-seed/documents/          # 3 synthetic RAG demo docs (discharge summary, prescription, care plan)
+backend/static/               # Monad-styled landing page served at /static
 .github/workflows/ci.yml      # backend (tests + PG migration + E2E smoke) + frontend (codegen + analyze)
 docker-compose.yml            # pgvector/pg16 + redis + backend (no dashboard container)
 ```
@@ -365,21 +403,24 @@ docker-compose.yml            # pgvector/pg16 + redis + backend (no dashboard co
 
 ## Testing Strategy
 
-- **Unit:** models, auth (JWT/bcrypt), providers (language, embeddings, notification), services (reminder engine, retention, sync consumer, RAG, report, compliance) — pytest, SQLite in-memory, `ENVIRONMENT=test`
+- **Unit:** models, auth (JWT/bcrypt/refresh rotation), providers (language, embeddings, notification), services (reminder engine, retention, sync consumer, RAG, report, compliance) — pytest, SQLite in-memory, `ENVIRONMENT=test`
 - **Security gates:** `test_phase0_fixes.py` (5 P0 regressions: encryption config key, report decrypt, auth on `/language/*`, consent-revoke ownership, game-session IDOR), `test_phase11_gates.py` (cross-patient 403/404, read-audit rows, encrypted docs), `test_phase12_gates.py` (consent scoping, permission tiers, production secret/CORS refusal)
-- **Integration:** `test_api_routes.py` E2E flows; `smoke_e2e.py` for live-server vs real Postgres
-- **Frontend:** mobile `test/widget_test.dart` (model parsing) — no widget/DB tests yet; dashboard single smoke widget test
-- **Commands:** `cd backend && python -m pytest app/tests tests -q` · `python test_phase2_services.py` · `python smoke_e2e.py` · `uvicorn app.main:app --reload`
+- **Integration:** `test_api_routes.py` E2E flows; `smoke_e2e.py` for live-server vs real Postgres (companion-config POST treats a 409 as idempotent pass, so re-runs are clean)
+- **Frontend:** mobile `test/game_analytics_engine_test.dart` (difficulty rules + report fields) and `test/widget_test.dart` (model parsing); `test/api_live_test.dart` and `integration_test/app_flow_test.dart` need a running backend/emulator; dashboard single smoke widget test
+- **Commands:** `cd backend && python3 -m pytest app/tests tests -q` · `python3 test_phase2_services.py` · `python3 run_tests.py` · `python3 smoke_e2e.py` · `uvicorn app.main:app --reload` · `cd mobile && flutter test`
 
 ---
 
 ## Remaining Work (reconciled)
 
-**Shipped since the phase docs (2026-09-05):** Phase 11 compliance enforcement
-(no-implicit-access, read-audit, consent scoping, retention jobs), Phase 12
-hardening (rate limiting, CORS, secret validation, CI), OpenRouter LLM adapter,
-background job loop, document upload, sync consumer, demo seed corpus, Flutter
-compile/codegen verified.
+**Shipped since the last reconcile (2026-09-06):** single-use refresh-token
+rotation (`0003_refresh_rotation`), Monad design system across mobile +
+dashboard + `backend/static/`, client-side `game_analytics_engine.dart` with
+tests, gentler difficulty grids (2/4/6 pairs; hints through L2), 5 new NER
+content items + an 11th routine step, two game-scoring bug fixes (attempts only
+count resolved attempts; `raw_event_log` reassigned so SQLAlchemy persists it),
+idempotent companion-config step in `smoke_e2e.py`, and a debug-only Android
+cleartext config for `10.0.2.2`/localhost.
 
 **Genuinely open / deferred:**
 - Live API keys to activate real integrations (OpenRouter `OPENROUTER_API_KEY`,
@@ -389,11 +430,21 @@ compile/codegen verified.
   speech plugins (text chat + service-side ASR/TTS are wired); notification
   permission request call and notification-tap handler pending
 - Mobile per-action game telemetry: screens queue `actions: []` though the
-  `GameAction` table + replay path exist
+  `GameAction` table + replay path exist. `game_analytics_engine.dart` computes
+  the same metrics client-side but does not yet feed the server telemetry path.
+- Game art is unsourced: `mobile/assets/games/` holds only a manifest README —
+  32 card PNGs + audio are to be commissioned. Not a blocker: every visual falls
+  back to a theme-colored Material icon via `lib/games/game_visuals.dart`, so a
+  missing file never crashes the UI (add keys to `GameVisuals.availableImages` to
+  activate real art).
 - Real notification channels (SMS/email/APNs/FCM) beyond the `console` provider;
   data-export for ransomware-style backup/recovery (Phase 12 checklist)
-- Dashboard is read-only; no charts library; reminder/audit drill-down UI is next
-  (API methods landed in the working tree)
+- `monad_theme.dart` is copied in `mobile/` and `dashboard/` with no shared
+  package, and the copies have already diverged — mobile adds a game extension
+  (pastel `tint*` card-face colors, never color-alone). Shared token edits must
+  land in both files by hand.
+- Dashboard reminder-schedule editing and audit-trail viewer are in; deeper
+  drill-down (per-event reminder history, alert timelines) is next
 - v2: ML-based alert rules, wearable data, dementia-friendly modes
 
 ---

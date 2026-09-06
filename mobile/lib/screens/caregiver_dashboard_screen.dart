@@ -14,6 +14,7 @@ import '../models/shared_models.dart';
 import '../services/api_service.dart';
 import '../services/auth_session.dart';
 import '../theme/monad_theme.dart';
+import '../widgets/dev_role_menu.dart';
 import '../widgets/trend_chart.dart';
 
 class CaregiverDashboardScreen extends StatefulWidget {
@@ -216,9 +217,9 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const DevRoleMenu(),
       appBar: AppBar(
-        title: const Text('Caregiver Dashboard / তত্ত্বাৱধায়ক'),
-        centerTitle: false,
+        title: const Text('Caregiver Dashboard / তত্ত্বাৱধায়ক'),        centerTitle: false,
         actions: [
           IconButton(
             tooltip: 'Sign out',
@@ -288,20 +289,53 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
           const SizedBox(height: 16),
         ],
         if (summary != null) ...[
+          _sectionHeader('Overview'),
+          const SizedBox(height: 12),
           _alerts(summary),
           if ((summary['active_alerts'] as List? ?? []).isNotEmpty)
             const SizedBox(height: 16),
           _metrics(summary),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
+          _sectionHeader('Trends'),
+          const SizedBox(height: 12),
           _trends(summary), // hidden server-side for view=basic
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
+          _sectionHeader('Compliance'),
+          const SizedBox(height: 12),
           _complianceLog(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
+          _sectionHeader('Schedules'),
+          const SizedBox(height: 12),
           _schedulesCard(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
+          _sectionHeader('Audit trail'),
+          const SizedBox(height: 12),
           _auditCard(),
         ],
       ],
+    );
+  }
+
+  Widget _sectionHeader(String title) => Text(title, style: Monad.subheading);
+
+  /// Pill status chip: tinted fill + icon + uppercase label. Chips are one
+  /// of the two surfaces allowed the ambient shadow (DESIGN.md amendment).
+  Widget _chip({required String label, required IconData icon, required Color tint}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: tint,
+        borderRadius: BorderRadius.circular(Monad.radiusPill),
+        boxShadow: Monad.cardShadow,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Monad.offBlack),
+          const SizedBox(width: 6),
+          Text(label.toUpperCase(), style: Monad.monoCaption.copyWith(color: Monad.offBlack)),
+        ],
+      ),
     );
   }
 
@@ -349,57 +383,73 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (alerts.isNotEmpty) ...[
-          Text('ACTIVE RISK ALERTS', style: Monad.monoLabel.copyWith(color: Monad.crimson)),
-          const SizedBox(height: 8),
           ...alerts.map((a) {
             final map = a as Map<String, dynamic>;
             final critical =
                 map['severity'] == 'critical' || map['severity'] == 'warning';
-            return Card(
-              elevation: 0,
-              color: critical
-                  ? Monad.coral.withValues(alpha: 0.18)
-                  : Monad.gold.withValues(alpha: 0.35),
-              shape: Monad.softShape,
-              child: ListTile(
-                leading: Icon(
-                  critical ? Icons.warning_amber_rounded : Icons.info_outline,
-                  color: critical ? Monad.crimson : Monad.graphite,
-                  size: 32,
-                ),
-                title: Text(map['summary'] as String? ?? 'Risk alert',
-                    style: Monad.monoBody.copyWith(color: Monad.offBlack)),
-                subtitle: Text('Type: ${map['trigger_type']}',
-                    style: Monad.monoBodySm),
-                trailing: ElevatedButton(
-                  onPressed: () => _acknowledge(map['id'] as String),
-                  child: const Text('Resolve'),
-                ),
+            final tint =
+                critical ? Monad.tintCoral : Monad.tintGold;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: tint,
+                borderRadius: BorderRadius.circular(Monad.radiusCard),
+                boxShadow: Monad.cardShadow,
+              ),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _chip(
+                    label: (map['severity'] as String? ?? 'notice'),
+                    icon: critical
+                        ? Icons.warning_amber_rounded
+                        : Icons.info_outline,
+                    tint: Monad.parchment,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(map['summary'] as String? ?? 'Risk alert',
+                      style: Monad.patientBody),
+                  const SizedBox(height: 4),
+                  Text('Type: ${map['trigger_type']}',
+                      style: Monad.monoBodySm),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () => _acknowledge(map['id'] as String),
+                    child: const Text('Resolve'),
+                  ),
+                ],
               ),
             );
           }),
-          const SizedBox(height: 16),
         ],
-        // Threshold flags — exactly as the backend computes them.
+        // Threshold flags — exactly as the backend computes them, surfaced
+        // as one elevated periwinkle banner.
         if (drop || missed)
-          Card(
-            elevation: 0,
-            shape: Monad.softShape,
+          Container(
+            decoration: BoxDecoration(
+              color: Monad.periwinkleMist,
+              borderRadius: BorderRadius.circular(Monad.radiusCard),
+              boxShadow: Monad.cardShadow,
+            ),
+            padding: const EdgeInsets.all(20),
             child: Column(
               children: [
                 if (drop)
                   ListTile(
+                    contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.trending_down,
                         color: Monad.crimson, size: 32),
                     title: Text('Cognitive drop detected (<60% accuracy)',
-                        style: Monad.monoBody.copyWith(color: Monad.offBlack)),
+                        style: Monad.patientBody),
                   ),
                 if (missed)
                   ListTile(
+                    contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.notifications_off,
                         color: Monad.crimson, size: 32),
                     title: Text('3+ missed reminders in 7 days',
-                        style: Monad.monoBody.copyWith(color: Monad.offBlack)),
+                        style: Monad.patientBody),
                   ),
               ],
             ),
@@ -415,28 +465,28 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
     final ack = summary['reminders_acknowledged'] as int? ?? 0;
     final total = summary['reminders_total'] as int? ?? 0;
     final missed = summary['reminders_missed'] as int? ?? 0;
-    return Row(
-      children: [
-        if (isClinical)
-          Expanded(
-            child: _tile(
-              'Cognitive accuracy',
-              '${((summary['accuracy_pct'] as num? ?? 0) as double).toStringAsFixed(0)}%',
-              '$games games (7d)',
-              Icons.psychology,
-            ),
-          ),
-        if (isClinical) const SizedBox(width: 12),
-        Expanded(
-          child: _tile('Compliance',
-              '${compliance.toStringAsFixed(0)}%', '$ack/$total acknowledged',
-              Icons.alarm_on),
+    final tiles = <Widget>[
+      if (isClinical)
+        _tile(
+          'Cognitive accuracy',
+          '${((summary['accuracy_pct'] as num? ?? 0) as double).toStringAsFixed(0)}%',
+          '$games games (7d)',
+          Icons.psychology,
+          Monad.tintSky,
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _tile('Missed', '$missed', 'last 7 days', Icons.event_busy),
-        ),
-      ],
+      _tile('Compliance', '${compliance.toStringAsFixed(0)}%',
+          '$ack/$total acknowledged', Icons.alarm_on, Monad.tintMint),
+      _tile('Missed', '$missed', 'last 7 days', Icons.event_busy,
+          missed > 0 ? Monad.tintCoral : Monad.tintGold),
+    ];
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.15,
+      children: tiles,
     );
   }
 
@@ -510,26 +560,51 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
               ...events.map((e) {
                 final escalated = e.status == ReminderStatus.escalated;
                 final missed = e.status == ReminderStatus.missed;
-                final color = escalated || missed ? Monad.crimson : Monad.offBlack;
-                return ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    escalated
-                        ? Icons.notification_important
-                        : missed
-                            ? Icons.event_busy
-                            : Icons.check_circle,
-                    color: color,
-                    size: 24,
+                final done = !escalated && !missed;
+                final tint = done
+                    ? Monad.tintMint
+                    : (escalated ? Monad.tintCoral : Monad.tintGold);
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: tint,
+                    borderRadius:
+                        BorderRadius.circular(Monad.radiusMin),
+                    boxShadow: Monad.cardShadow,
                   ),
-                  title: Text(
-                    e.status.name.toUpperCase(),
-                    style: Monad.monoBodySm.copyWith(color: color),
-                  ),
-                  subtitle: Text(
-                    '${e.scheduledAt.toLocal()}'.substring(0, 16),
-                    style: Monad.monoCaption,
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    children: [
+                      Icon(
+                        done
+                            ? Icons.check_circle
+                            : escalated
+                                ? Icons.notification_important
+                                : Icons.event_busy,
+                        color: Monad.offBlack,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              done
+                                  ? 'DONE'
+                                  : e.status.name.toUpperCase(),
+                              style: Monad.monoLabel,
+                            ),
+                            Text(
+                              '${e.scheduledAt.toLocal()}'
+                                  .substring(0, 16),
+                              style: Monad.monoCaption.copyWith(
+                                  color: Monad.offBlack),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 );
               }),
@@ -567,10 +642,27 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
             else if (schedules.isEmpty)
               Text('No schedules yet.', style: Monad.monoBodySm)
             else
-              ...schedules.map((s) => ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(
+              ...schedules.map((s) {
+                final typeColor =
+                    Monad.reminderColor(s.reminderType.name);
+                final tint = s.reminderType == ReminderType.medicine
+                    ? Monad.tintSky
+                    : s.reminderType == ReminderType.water
+                        ? Monad.tintSky
+                        : s.reminderType == ReminderType.food
+                            ? Monad.tintGold
+                            : Monad.tintMint;
+                return ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    decoration: BoxDecoration(
+                      color: tint,
+                      borderRadius:
+                          BorderRadius.circular(Monad.radiusMin),
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(
                       s.reminderType == ReminderType.medicine
                           ? Icons.medication
                           : s.reminderType == ReminderType.water
@@ -578,20 +670,24 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
                               : s.reminderType == ReminderType.food
                                   ? Icons.restaurant
                                   : Icons.directions_walk,
-                      color: Monad.offBlack,
+                      color: typeColor == Monad.mint || typeColor == Monad.gold
+                          ? Monad.offBlack
+                          : typeColor,
                       size: 24,
                     ),
-                    title: Text(s.reminderType.name.toUpperCase(),
-                        style: Monad.monoLabel),
-                    subtitle: Text('${s.cadence} · ${s.isActive ? 'active' : 'paused'}',
-                        style: Monad.monoBodySm),
-                    trailing: IconButton(
-                      tooltip: 'Remove',
-                      icon: const Icon(Icons.delete_outline, size: 20),
-                      color: Monad.graphite,
-                      onPressed: () => _removeSchedule(s.id),
-                    ),
-                  )),
+                  ),
+                  title: Text(s.reminderType.name.toUpperCase(),
+                      style: Monad.patientBody),
+                  subtitle: Text('${s.cadence} · ${s.isActive ? 'active' : 'paused'}',
+                      style: Monad.monoBodySm),
+                  trailing: IconButton(
+                    tooltip: 'Remove',
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    color: Monad.graphite,
+                    onPressed: () => _removeSchedule(s.id),
+                  ),
+                );
+              }),
           ],
         ),
       ),
@@ -656,29 +752,33 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
     );
   }
 
-  Widget _tile(String title, String value, String subtitle, IconData icon) {
+  Widget _tile(
+      String title, String value, String subtitle, IconData icon, Color tint) {
     return Card(
       elevation: 0,
       shape: Monad.cardShape,
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                    child: Text(title.toUpperCase(),
-                        style: Monad.monoCaption,
-                        overflow: TextOverflow.ellipsis)),
-                Icon(icon, color: Monad.offBlack, size: 24),
-              ],
+            Container(
+              decoration: BoxDecoration(
+                color: tint,
+                borderRadius: BorderRadius.circular(Monad.radiusMin),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: Icon(icon, color: Monad.offBlack, size: 22),
             ),
-            const SizedBox(height: 12),
-            Text(value, style: Monad.headingSm.copyWith(fontSize: 32)),
-            const SizedBox(height: 8),
-            Text(subtitle, style: Monad.monoBodySm),
+            const SizedBox(height: 10),
+            Text(value,
+                style: Monad.headingSm.copyWith(fontSize: 32),
+                overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 4),
+            Text(title.toUpperCase(),
+                style: Monad.monoCaption, overflow: TextOverflow.ellipsis),
+            Text(subtitle, style: Monad.monoCaption),
           ],
         ),
       ),

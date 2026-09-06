@@ -106,6 +106,43 @@ class Monad {
   static RoundedRectangleBorder get softShape =>
       RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusMin), side: const BorderSide(color: ash, width: 1));
 
+  // ===== Elder-care game extension (see DESIGN.md amendment) =====
+  // Pastel face tints: illustration surfaces only, always paired with
+  // distinct art + text label (never color-alone). All exceed 10:1 with
+  // Off-Black text/icons on Parchment.
+  static const double _faceTintOpacity = 0.22;
+  static Color get tintCoral => Color.lerp(parchment, coral, _faceTintOpacity)!;
+  static Color get tintSky => Color.lerp(parchment, skyBlue, _faceTintOpacity)!;
+  static Color get tintMint => Color.lerp(parchment, mint, _faceTintOpacity)!;
+  static Color get tintGold => Color.lerp(parchment, gold, _faceTintOpacity)!;
+
+  // Stable order for cycling tints across cards.
+  static List<Color> get faceTints => [tintMint, tintSky, tintCoral, tintGold];
+
+  /// Reminder type color (icon + label + tint together; never color-alone).
+  static Color reminderColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'medicine':
+        return lakeBlue;
+      case 'water':
+        return skyBlue;
+      case 'food':
+        return gold;
+      case 'exercise':
+        return mint;
+      default:
+        return graphite;
+    }
+  }
+
+  /// Ambient shadow, permitted on game card faces and status chips only.
+  static const List<BoxShadow> cardShadow = [
+    BoxShadow(color: Color(0x1A000000), blurRadius: 10, offset: Offset.zero),
+  ];
+
+  /// Patient-facing body floor: 20px (DESIGN.md --text-body-lg).
+  static TextStyle get patientBody => monoBodyLg.copyWith(color: offBlack);
+
   /// ThemeData for the whole app.
   static ThemeData theme() {
     final base = ThemeData(

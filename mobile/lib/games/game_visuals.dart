@@ -44,6 +44,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/monad_theme.dart';
+import 'cultural_art.dart';
 
 class GameVisuals {
   GameVisuals._();
@@ -94,7 +95,8 @@ class GameVisuals {
   /// ship PNGs and add their keys here.
   static const Set<String> availableImages = {};
 
-  /// The visual for a card face: PNG when shipped, icon otherwise.
+  /// The visual for a card face, in order: commissioned PNG, painted
+  /// cultural art ([CulturalArt]), mapped Material icon. Never crashes.
   static Widget face({
     required String imageKey,
     required String label,
@@ -106,6 +108,9 @@ class GameVisuals {
         fit: BoxFit.contain,
         errorBuilder: (_, __, ___) => _iconFace(imageKey, iconSize),
       );
+    }
+    if (CulturalArt.hasArt(imageKey)) {
+      return CulturalArt(imageKey, size: iconSize);
     }
     return _iconFace(imageKey, iconSize);
   }

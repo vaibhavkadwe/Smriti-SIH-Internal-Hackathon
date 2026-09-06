@@ -427,3 +427,22 @@ The serif-mono pairing is the single most distinctive design choice in this syst
   --shadow-md: rgba(0, 0, 0, 0.1) 0px 0px 10px 0px;
 }
 ```
+
+## Elder-Care Game Extension
+
+Scoped amendment for the patient-facing mobile surfaces (games, reminders).
+Everything not named here stays pure Monad: text, buttons, borders, and all
+chrome outside game card faces and status chips are unchanged.
+
+- **Card-face tints:** Coral, Sky Blue, Mint, Gold at ≤25% opacity over
+  Parchment, illustration surfaces only (memory-match faces, routine cards).
+  Tints differentiate by hue AND always pair with a distinct illustration
+  plus a text label — never color-alone.
+- **Elevation:** `--shadow-md` is permitted on game card faces and status
+  chips only. All other cards keep 1px Ash hairlines with no shadow.
+- **Body floor:** patient-facing strings use `--text-body-lg` (20px) minimum.
+  14–16px sizes are reserved for metadata and captions.
+- **Reminder types:** medicine = Lake Blue, water = Sky Blue, food = Gold,
+  exercise = Mint. Type is always conveyed by icon + label + tint together.
+- **Contrast:** Off-Black (#242424) text/icons on any tint above must meet
+  WCAG AA (4.5:1). All four tints at ≤25% over Parchment exceed 10:1.

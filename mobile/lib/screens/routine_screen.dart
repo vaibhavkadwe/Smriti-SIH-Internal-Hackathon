@@ -411,20 +411,22 @@ class _RoutineScreenState extends State<RoutineScreen> {
       itemBuilder: (context, index) {
         final step = available[index];
         final isHintTarget = step.stepId == hintedStepId;
+        final tint = Monad.faceTints[index % Monad.faceTints.length];
         return Semantics(
           button: true,
           label: step.getTitle(widget.languageCode),
-          child: Card(
-            elevation: 0,
-            color: Monad.parchment,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(Monad.radiusMin),
-              side: BorderSide(
+          child: Container(
+            decoration: BoxDecoration(
+              color: tint,
+              borderRadius: BorderRadius.circular(Monad.radiusCard),
+              border: Border.all(
                 color: isHintTarget ? Monad.gold : Monad.ash,
                 width: isHintTarget ? 3 : 1,
               ),
+              boxShadow: Monad.cardShadow,
             ),
             child: InkWell(
+              borderRadius: BorderRadius.circular(Monad.radiusCard),
               onTap: () => _onStepTap(step),
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -432,13 +434,16 @@ class _RoutineScreenState extends State<RoutineScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (step.icon != null)
-                      Icon(_iconFor(step.icon!), size: 34, color: _NERPalette.accent),
+                      Icon(_iconFor(step.icon!), size: 34, color: Monad.offBlack),
                     const SizedBox(height: 6),
                     Text(
                       step.getTitle(widget.languageCode),
                       textAlign: TextAlign.center,
                       maxLines: 2,
-                      style: Monad.monoLabel.copyWith(color: _NERPalette.textDark),
+                      overflow: TextOverflow.ellipsis,
+                      style: Monad.patientBody.copyWith(
+                        color: _NERPalette.textDark,
+                      ),
                     ),
                   ],
                 ),

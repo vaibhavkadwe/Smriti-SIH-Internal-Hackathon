@@ -14,7 +14,16 @@ import 'api_service.dart';
 enum AuthStatus { restoring, unauthenticated, authenticated }
 
 class AuthSession extends ChangeNotifier {
-  AuthSession._();
+  AuthSession._() {
+    // Dead sessions (rotated/expired refresh) bounce to login instead of
+    // stranding the user, and silent refreshes persist across restarts.
+    ApiService.onUnauthorized = () => logout();
+    ApiService.onTokensRefreshed = (access, refresh) async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kAccess, access);
+      await prefs.setString(_kRefresh, refresh);
+    };
+  }
 
   static final AuthSession instance = AuthSession._();
 

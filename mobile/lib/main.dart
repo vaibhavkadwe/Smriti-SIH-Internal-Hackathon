@@ -18,6 +18,7 @@ import 'services/api_service.dart';
 import 'services/auth_session.dart';
 import 'services/offline_sync_service.dart';
 import 'theme/monad_theme.dart';
+import 'widgets/dev_role_menu.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -360,6 +361,7 @@ class _PatientHome extends StatelessWidget {
           ),
         ],
       ),
+      drawer: const DevRoleMenu(),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

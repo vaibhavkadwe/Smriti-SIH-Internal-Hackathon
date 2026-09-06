@@ -62,6 +62,17 @@ class ApiService {
   /// Singleton with the token wired by [AuthSession] after login.
   static final ApiService instance = ApiService();
 
+  /// Fired when an authenticated request ends in 401 (refresh failed or
+  /// missing). AuthSession wires this to drop back to the login screen so
+  /// a dead session never strands the user. Guarded against reentrancy
+  /// (logout itself calls the API).
+  static Future<void> Function()? onUnauthorized;
+  bool _inUnauthorizedHandler = false;
+
+  /// Fired after a successful silent refresh so new tokens get persisted.
+  /// Without this, a restart would replay a rotated (dead) refresh token.
+  static void Function(String access, String refresh)? onTokensRefreshed;
+
   // =====================================================================
   // Low-level HTTP
   // =====================================================================
@@ -118,6 +129,14 @@ class ApiService {
         return _send(method, path, body: body, query: query, includeAuth: includeAuth);
       }
     }
+    if (response.statusCode == 401 && includeAuth && !_inUnauthorizedHandler) {
+      _inUnauthorizedHandler = true;
+      try {
+        await onUnauthorized?.call();
+      } finally {
+        _inUnauthorizedHandler = false;
+      }
+    }
     return response;
   }
 
@@ -126,6 +145,7 @@ class ApiService {
       final tokens = await refresh(refreshToken!);
       authToken = tokens.accessToken;
       refreshToken = tokens.refreshToken;
+      onTokensRefreshed?.call(tokens.accessToken, tokens.refreshToken);
       return true;
     } catch (_) {
       return false;

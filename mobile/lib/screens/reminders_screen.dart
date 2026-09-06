@@ -144,68 +144,108 @@ class _RemindersScreenState extends State<RemindersScreen> {
   Widget _scheduleCard(ReminderScheduleModel schedule) {
     final done = _justAcked.contains(schedule.id);
     final hasOpenEvent = _openEventBySchedule.containsKey(schedule.id);
-    return Card(
-      elevation: 0,
+    final tint = done
+        ? Monad.tintMint
+        : schedule.reminderType == ReminderType.medicine
+            ? Monad.periwinkleMist
+            : schedule.reminderType == ReminderType.water
+                ? Monad.tintSky
+                : schedule.reminderType == ReminderType.food
+                    ? Monad.tintGold
+                    : Monad.tintMint;
+    final typeColor = Monad.reminderColor(schedule.reminderType.name);
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      shape: Monad.cardShape,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Row(
-              children: [
+      decoration: BoxDecoration(
+        color: tint,
+        borderRadius: BorderRadius.circular(Monad.radiusCard),
+        border: Border.all(color: Monad.ash, width: 1),
+        boxShadow: Monad.cardShadow,
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Monad.parchment,
+                  border: Border.all(color: Monad.ash),
+                  borderRadius: BorderRadius.circular(Monad.radiusMin),
+                ),
+                child: Icon(_iconFor(schedule.reminderType),
+                    color: typeColor == Monad.mint || typeColor == Monad.gold
+                        ? Monad.offBlack
+                        : typeColor,
+                    size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      schedule.reminderType.name.toUpperCase(),
+                      style: Monad.monoLabel.copyWith(
+                        color: done ? Monad.smoke : Monad.offBlack,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      schedule.cadence,
+                      style: Monad.patientBody.copyWith(
+                        color: done ? Monad.smoke : Monad.offBlack,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (done)
                 Container(
-                  width: 40,
-                  height: 40,
                   decoration: BoxDecoration(
                     color: Monad.parchment,
-                    border: Border.all(color: Monad.ash),
-                    borderRadius: BorderRadius.circular(Monad.radiusMin),
+                    borderRadius:
+                        BorderRadius.circular(Monad.radiusPill),
                   ),
-                  child:
-                      Icon(_iconFor(schedule.reminderType), color: Monad.offBlack, size: 20),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        schedule.reminderType.name.toUpperCase(),
-                        style: Monad.monoLabel.copyWith(
-                          color: done ? Monad.smoke : Monad.offBlack,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Time: ${schedule.cadence}',
-                        style: Monad.monoBodySm,
-                      ),
+                      const Icon(Icons.check_circle,
+                          color: Monad.offBlack, size: 16),
+                      const SizedBox(width: 6),
+                      Text('DONE',
+                          style: Monad.monoCaption
+                              .copyWith(color: Monad.offBlack)),
                     ],
                   ),
                 ),
-                if (done) const Icon(Icons.check_circle, color: Monad.offBlack, size: 32),
-              ],
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              width: double.infinity,
-              height: 58,
-              child: ElevatedButton.icon(
-                onPressed: (done || !hasOpenEvent) ? null : () => _handleAcknowledge(schedule),
-                icon: const Icon(Icons.check_circle, size: 28, color: Monad.white),
-                label: Text(
-                  done
-                      ? 'Done / সম্পন্ন'
-                      : hasOpenEvent
+            ],
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            height: 58,
+            child: done
+                ? const SizedBox.shrink()
+                : ElevatedButton.icon(
+                    onPressed: !hasOpenEvent
+                        ? null
+                        : () => _handleAcknowledge(schedule),
+                    icon: const Icon(Icons.check_circle,
+                        size: 28, color: Monad.white),
+                    label: Text(
+                      hasOpenEvent
                           ? 'I Did This / কৰিলোঁ'
                           : 'No reminder due now / এতিয়া নাই',
-                  style: Monad.monoLabel.copyWith(color: Monad.white),
-                ),
-              ),
-            ),
-          ],
-        ),
+                      style: Monad.monoLabel.copyWith(color: Monad.white),
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
   }
