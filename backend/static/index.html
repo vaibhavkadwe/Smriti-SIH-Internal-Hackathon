@@ -4,351 +4,542 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smriti — AI Cognitive Companion</title>
-  <meta name="description" content="AI-Powered Cognitive Gaming and Memory Assistance Platform for Elderly Care">
+  <meta name="description" content="AI-Powered Cognitive Gaming and Memory Assistance Platform for Elderly Care in the North Eastern Region">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%232b59d1'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-  <!-- Top App Navigation & Language Bar -->
-  <header class="app-header">
-    <div class="brand-container">
-      <div class="brand-logo-icon">S</div>
-      <div>
-        <h1 class="brand-title">Smriti</h1>
-        <div class="brand-subtitle">AI Cognitive Companion & Memory Assistant</div>
-      </div>
+  <!-- ====================================================================
+       ANNOUNCEMENT BAR (DESIGN.md: Ink #000000, ~40px, mono 14px white,
+       white pill right, × close)
+       ==================================================================== -->
+  <div class="announcement-bar" id="announcementBar">
+    <div class="container announcement-inner">
+      <span class="announcement-text">Demo mode — caregiver login: 919876543002 / DemoPass123</span>
+      <a href="#caregiverView" class="announcement-pill" onclick="switchView('caregiver'); return false;">Open Caregiver View</a>
     </div>
+    <button type="button" class="announcement-close" aria-label="Dismiss announcement" onclick="dismissAnnouncement()">&times;</button>
+  </div>
 
-    <div class="header-actions">
-      <!-- Mode Switcher -->
-      <div class="view-mode-toggle" id="viewModeToggle">
-        <button type="button" class="toggle-btn active" id="btnPatientMode" onclick="switchView('patient')">
-          Elder / Patient View
-        </button>
-        <button type="button" class="toggle-btn" id="btnCaregiverMode" onclick="switchView('caregiver')">
-          Caregiver Dashboard
-        </button>
+  <!-- ====================================================================
+       NAVIGATION BAR (DESIGN.md: ~80px, parchment, wordmark + dot,
+       mono 18px uppercase links, ghost + blue pills right)
+       ==================================================================== -->
+  <header class="app-header">
+    <div class="container nav-inner">
+      <div class="brand-container">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <div>
+          <div class="brand-title">Smriti</div>
+          <div class="brand-subtitle">AI Cognitive Companion &amp; Memory Assistant</div>
+        </div>
       </div>
 
-      <!-- Language Selector -->
-      <select id="languageSelect" class="lang-select" onchange="onLanguageChange(this.value)">
-        <option value="english" selected>English</option>
-        <option value="assamese">Assamese (অসমীয়া)</option>
-        <option value="bengali">Bengali (বাংলা)</option>
-        <option value="hindi">Hindi (हिंदी)</option>
-      </select>
+      <nav class="nav-links" aria-label="Primary">
+        <button type="button" class="nav-link" onclick="scrollToSection('how')">How it works</button>
+        <button type="button" class="nav-link" onclick="scrollToSection('features')">Features</button>
+        <button type="button" class="nav-link" onclick="scrollToSection('faq')">FAQ</button>
+      </nav>
 
-      <div id="userInfoBadge" class="user-status hidden">
-        <span id="userRoleText">Patient</span>
-        <button type="button" class="btn-secondary" onclick="logout()">Logout</button>
+      <div class="nav-actions">
+        <div id="userInfoBadge" class="user-status hidden">
+          <span id="userRoleText">Patient</span>
+          <button type="button" class="btn-back" onclick="logout()">Logout</button>
+        </div>
+        <button type="button" class="btn btn-ghost" id="navLoginBtn" onclick="switchView('caregiver')">Login</button>
+        <button type="button" class="btn btn-blue" id="navPatientBtn" onclick="switchView('patient')">Patient View</button>
       </div>
     </div>
   </header>
 
-  <main class="main-wrapper">
+  <main>
 
     <!-- ====================================================================
-         1. PATIENT DASHBOARD VIEW (Large Text, High Accessibility)
+         0. LANDING VIEW (Monad system: hero, pipeline, features, FAQ, logos)
          ==================================================================== -->
-    <section id="patientView" class="patient-view">
+    <section id="landingView" class="landing-view">
 
-      <!-- Patient Welcome Header -->
-      <div class="patient-welcome-card">
-        <h2 id="patientGreeting" class="patient-title">Hello, Grandma Phukan</h2>
-        <p id="patientSubtext" class="patient-subtext">Welcome back. What would you like to do today?</p>
-      </div>
-
-      <!-- Ease of Access Big Action Buttons -->
-      <div class="access-buttons-grid">
-        
-        <button type="button" class="access-btn" onclick="openPatientFeature('game')">
-          <div class="access-btn-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-              <path d="M7 7h4v4H7zM13 13h4v4h-4z"></path>
-            </svg>
+      <!-- HERO (80px serif 400, mono 20px graphite subtext, blue + ghost pills,
+           gradient atmospheric washes) -->
+      <div class="hero">
+        <div class="wash wash-coral-sky" aria-hidden="true"></div>
+        <div class="wash wash-sky-mint" aria-hidden="true"></div>
+        <div class="container hero-content">
+          <h1 class="hero-headline">Reviving memories,<br>restoring smiles.</h1>
+          <p class="hero-subtext">Adaptive cognitive games, a voice-guided multilingual companion, and caregiver monitoring — built for elderly dementia patients across the North Eastern Region, working even offline.</p>
+          <div class="hero-actions">
+            <button type="button" class="btn btn-blue" onclick="switchView('patient')">Open Patient View <span class="btn-arrow" aria-hidden="true">▸</span></button>
+            <button type="button" class="btn btn-ghost" onclick="switchView('caregiver')">Caregiver Dashboard</button>
           </div>
-          <div>
-            <div class="access-btn-text-main" id="txtMatchItTitle">Play Card Match Game</div>
-            <div class="access-btn-text-sub" id="txtMatchItSub">Fun memory exercise with cultural pictures</div>
-          </div>
-        </button>
-
-        <button type="button" class="access-btn" onclick="openPatientFeature('routine')">
-          <div class="access-btn-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1"></path>
-            </svg>
-          </div>
-          <div>
-            <div class="access-btn-text-main" id="txtRoutineTitle">Daily Routine Game</div>
-            <div class="access-btn-text-sub" id="txtRoutineSub">Arrange daily activities in right order</div>
-          </div>
-        </button>
-
-        <button type="button" class="access-btn" onclick="openPatientFeature('reminders')">
-          <div class="access-btn-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-          </div>
-          <div>
-            <div class="access-btn-text-main" id="txtRemindersTitle">My Daily Reminders</div>
-            <div class="access-btn-text-sub" id="txtRemindersSub">Check medicine, meals, and hydration</div>
-          </div>
-        </button>
-
-        <button type="button" class="access-btn" onclick="openPatientFeature('chat')">
-          <div class="access-btn-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            </svg>
-          </div>
-          <div>
-            <div class="access-btn-text-main" id="txtCompanionTitle">Talk to Voice Companion</div>
-            <div class="access-btn-text-sub" id="txtCompanionSub">Friendly assistant to guide and chat</div>
-          </div>
-        </button>
-
-      </div>
-
-      <!-- Feature Panel: Match-It Game -->
-      <div id="panelGame" class="patient-panel hidden">
-        <div class="panel-header">
-          <h3 class="panel-title">Match It — Cultural Memory Game</h3>
-          <button type="button" class="btn-secondary" onclick="closePatientPanels()">Back</button>
-        </div>
-        
-        <div class="game-score-bar">
-          <div>Moves: <span id="gameMoves">0</span></div>
-          <div>Score: <span id="gameScore">0</span></div>
-          <div>Pairs Matched: <span id="gamePairs">0/4</span></div>
-        </div>
-
-        <div id="gameGrid" class="cards-game-container">
-          <!-- Dynamically populated card items -->
         </div>
       </div>
 
-      <!-- Feature Panel: Routine Game -->
-      <div id="panelRoutine" class="patient-panel hidden">
-        <div class="panel-header">
-          <h3 class="panel-title">Daily Routine Sequencing</h3>
-          <button type="button" class="btn-secondary" onclick="closePatientPanels()">Back</button>
+      <!-- HOW IT WORKS — Pipeline diagram (pill nodes, ash connectors, mint glow hub) -->
+      <div class="pipeline-section" id="how">
+        <div class="container">
+          <div class="pipeline-rail" role="img" aria-label="Data pipeline: patient app, offline sync, AI adaptive engine, caregiver dashboard">
+            <div class="pipeline-node">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M10 18h4"/></svg>
+              Patient App
+            </div>
+            <div class="pipeline-connector" aria-hidden="true"></div>
+            <div class="pipeline-node">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 3l4 4-4 4M21 7H8a4 4 0 0 0-4 4M7 21l-4-4 4-4M3 17h13a4 4 0 0 0 4-4"/></svg>
+              Offline Sync
+            </div>
+            <div class="pipeline-connector" aria-hidden="true"></div>
+            <div class="pipeline-hub-wrap">
+              <div class="pipeline-hub-glow" aria-hidden="true"></div>
+              <div class="pipeline-node">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.5 2.5M16.5 16.5 19 19M19 5l-2.5 2.5M7.5 16.5 5 19"/></svg>
+                AI Adaptive Engine
+              </div>
+            </div>
+            <div class="pipeline-connector" aria-hidden="true"></div>
+            <div class="pipeline-node">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 3h18v14H7l-4 4V3z"/></svg>
+              Caregiver Dashboard
+            </div>
+          </div>
+          <p class="pipeline-caption t-body">Game sessions and reminder acknowledgements sync automatically when connectivity returns — no manual intervention.</p>
         </div>
-        <p class="patient-subtext">Order your morning steps from first to last:</p>
-
-        <div id="routineList" class="reminders-list">
-          <!-- Dynamically populated routine steps -->
-        </div>
-        <button type="button" class="btn-large-action" onclick="submitRoutineGame()">Submit Sequence</button>
       </div>
 
-      <!-- Feature Panel: Reminders -->
-      <div id="panelReminders" class="patient-panel hidden">
-        <div class="panel-header">
-          <h3 class="panel-title">Today's Reminders</h3>
-          <button type="button" class="btn-secondary" onclick="closePatientPanels()">Back</button>
-        </div>
+      <!-- FEATURES (feature cards + periwinkle elevated card) -->
+      <div class="section" id="features">
+        <div class="container">
+          <div class="feature-grid">
 
-        <div id="remindersContainer" class="reminders-list">
-          <!-- Dynamically loaded reminder items -->
-        </div>
-      </div>
+            <div class="card feature-card">
+              <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h4v4H7zM13 13h4v4h-4z"/></svg>
+              <h3 class="feature-title">Cognitive Games</h3>
+              <p class="feature-body">Match-It memory cards themed with NER festivals, food, attire and animals. Daily Routine Sequencing doubles as early cognitive assessment. Difficulty scales with performance.</p>
+            </div>
 
-      <!-- Feature Panel: Voice Companion Chat -->
-      <div id="panelChat" class="patient-panel hidden">
-        <div class="panel-header">
-          <h3 class="panel-title">Voice & Text Companion</h3>
-          <button type="button" class="btn-secondary" onclick="closePatientPanels()">Back</button>
-        </div>
+            <div class="card feature-card">
+              <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1"/></svg>
+              <h3 class="feature-title">Daily Routine Sequencing</h3>
+              <p class="feature-body">Patients arrange everyday activities in the right order — engagement and assessment in one calm exercise.</p>
+            </div>
 
-        <div id="chatMessages" class="chat-box">
-          <div class="chat-bubble bot">
-            Hello! I am your Smriti companion. How are you feeling today?
+            <div class="card feature-card">
+              <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <h3 class="feature-title">Voice Reminders</h3>
+              <p class="feature-body">Medicine, hydration, meals and exercise — voice-guided, local notifications that work fully offline and log compliance.</p>
+            </div>
+
+            <div class="card feature-card span-2-col">
+              <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <h3 class="feature-title">Voice Companion</h3>
+              <p class="feature-body">A friendly conversational assistant guides patients through the app and checks in daily on emotional wellbeing — reducing reliance on reading and typing. Multilingual across nine NER languages with pre-recorded native-speaker audio for core prompts.</p>
+            </div>
+
+            <div class="card feature-card">
+              <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg>
+              <h3 class="feature-title">Caregiver Dashboard</h3>
+              <p class="feature-body">Real-time trends, reminder compliance, and risk alerts for decline detection — multi-patient support for ASHA workers.</p>
+            </div>
+
+            <!-- Elevated Feature Card (Periwinkle) with gradient illustration -->
+            <div class="card-elevated span-2-col">
+              <div class="card-elevated-layout">
+                <div>
+                  <h3 class="feature-title">Offline-first for remote NER</h3>
+                  <p class="feature-body">The patient app works with zero connectivity — local-first storage, bundled game assets, and a background sync queue that reconciles with the caregiver dashboard the moment a signal returns.</p>
+                </div>
+                <div class="gradient-illustration" role="img" aria-label="Abstract gradient illustration of overlapping translucent shapes">
+                  <div class="shape shape-1"></div>
+                  <div class="shape shape-2"></div>
+                  <div class="shape shape-3"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card feature-card">
+              <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z"/></svg>
+              <h3 class="feature-title">DPDP Compliant</h3>
+              <p class="feature-body">Consent-gated clinical views, purpose-scoped access, and a full security audit trail on every sensitive action.</p>
+            </div>
+
           </div>
         </div>
+      </div>
 
-        <form class="chat-input-bar" onsubmit="sendChatMessage(event)">
-          <input type="text" id="chatInput" class="chat-input-field" placeholder="Type or say something..." required>
-          <button type="submit" class="btn-large-action">Send</button>
-        </form>
+      <!-- FAQ ACCORDION (40px vpad, ash bottom border, serif 24px, ↓ chevron) -->
+      <div class="section" id="faq">
+        <div class="container">
+          <h2 class="t-serif t-heading-lg" style="margin-bottom: var(--spacing-40);">Frequently asked questions</h2>
+          <div class="faq-list">
+
+            <div class="faq-item" data-open="false">
+              <button type="button" class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">
+                <span class="faq-question-text">Does the app work without internet?</span>
+                <span class="faq-chevron" aria-hidden="true">↓</span>
+              </button>
+              <div class="faq-answer"><p>Yes. The patient app is offline-first: games, reminders and the voice companion all function with zero connectivity, and data syncs automatically once a signal returns.</p></div>
+            </div>
+
+            <div class="faq-item" data-open="false">
+              <button type="button" class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">
+                <span class="faq-question-text">Which languages are supported?</span>
+                <span class="faq-chevron" aria-hidden="true">↓</span>
+              </button>
+              <div class="faq-answer"><p>Assamese, Bengali, Bodo, Khasi, Mizo, Manipuri (Meiteilon), Nepali, Hindi and English — with region-specific cultural content tied to the selected language.</p></div>
+            </div>
+
+            <div class="faq-item" data-open="false">
+              <button type="button" class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">
+                <span class="faq-question-text">Who can see clinical data?</span>
+                <span class="faq-chevron" aria-hidden="true">↓</span>
+              </button>
+              <div class="faq-answer"><p>Only consented clinical staff. Family caregivers see activity and compliance; accuracy trends and clinical flags require a linked clinical role, enforced server-side under DPDP consent scopes.</p></div>
+            </div>
+
+            <div class="faq-item" data-open="false">
+              <button type="button" class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">
+                <span class="faq-question-text">How does difficulty adapt?</span>
+                <span class="faq-chevron" aria-hidden="true">↓</span>
+              </button>
+              <div class="faq-answer"><p>The AI adaptive engine tracks accuracy and response time across sessions and scales game difficulty to keep each patient in a productive challenge band, flagging decline trends for caregivers.</p></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- LOGO STRIP (6 grayscale wordmarks, ~32px gaps) -->
+      <div class="section" style="padding-top: 0;">
+        <div class="container">
+          <div class="logo-strip" role="list" aria-label="Built on">
+            <span class="logo-wordmark" role="listitem">Bhashini</span>
+            <span class="logo-wordmark" role="listitem">MDoNER</span>
+            <span class="logo-wordmark" role="listitem">Google Cloud Speech</span>
+            <span class="logo-wordmark" role="listitem">Firebase</span>
+            <span class="logo-wordmark" role="listitem">SQLite · Drift</span>
+            <span class="logo-wordmark" role="listitem">SIH 2026</span>
+          </div>
+        </div>
       </div>
 
     </section>
 
+    <!-- ====================================================================
+         1. PATIENT DASHBOARD VIEW (Large Text, High Accessibility)
+         ==================================================================== -->
+    <section id="patientView" class="patient-view hidden">
+
+      <div class="main-wrapper">
+
+        <div class="view-header-row">
+          <h2 class="view-title">Hello, Grandma Phukan</h2>
+          <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <select id="languageSelect" class="lang-select" onchange="onLanguageChange(this.value)" aria-label="Language">
+              <option value="english" selected>English</option>
+              <option value="assamese">Assamese (অসমীয়া)</option>
+              <option value="bengali">Bengali (বাংলা)</option>
+              <option value="hindi">Hindi (हिंदी)</option>
+            </select>
+            <button type="button" class="btn-back" onclick="switchView('landing')">← Back to home</button>
+          </div>
+        </div>
+
+        <!-- Patient Welcome -->
+        <div class="patient-welcome-card">
+          <div class="wash wash-sky-mint" aria-hidden="true" style="width: 320px; height: 320px; bottom: -160px; right: -80px;"></div>
+          <h3 id="patientGreeting" class="patient-title">Welcome back</h3>
+          <p id="patientSubtext" class="patient-subtext">What would you like to do today?</p>
+        </div>
+
+        <!-- Ease of Access Big Action Buttons -->
+        <div class="access-buttons-grid">
+
+          <button type="button" class="access-btn" onclick="openPatientFeature('game')">
+            <div class="access-btn-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                <path d="M7 7h4v4H7zM13 13h4v4h-4z"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="access-btn-text-main" id="txtMatchItTitle">Play Card Match Game</div>
+              <div class="access-btn-text-sub" id="txtMatchItSub">Fun memory exercise with cultural pictures</div>
+            </div>
+          </button>
+
+          <button type="button" class="access-btn" onclick="openPatientFeature('routine')">
+            <div class="access-btn-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="access-btn-text-main" id="txtRoutineTitle">Daily Routine Game</div>
+              <div class="access-btn-text-sub" id="txtRoutineSub">Arrange daily activities in right order</div>
+            </div>
+          </button>
+
+          <button type="button" class="access-btn" onclick="openPatientFeature('reminders')">
+            <div class="access-btn-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <div>
+              <div class="access-btn-text-main" id="txtRemindersTitle">My Daily Reminders</div>
+              <div class="access-btn-text-sub" id="txtRemindersSub">Check medicine, meals, and hydration</div>
+            </div>
+          </button>
+
+          <button type="button" class="access-btn" onclick="openPatientFeature('chat')">
+            <div class="access-btn-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="access-btn-text-main" id="txtCompanionTitle">Talk to Voice Companion</div>
+              <div class="access-btn-text-sub" id="txtCompanionSub">Friendly assistant to guide and chat</div>
+            </div>
+          </button>
+
+        </div>
+
+        <!-- Feature Panel: Match-It Game -->
+        <div id="panelGame" class="patient-panel hidden">
+          <div class="panel-header">
+            <h3 class="panel-title">Match It — Cultural Memory Game</h3>
+            <button type="button" class="btn-secondary" onclick="closePatientPanels()">Back</button>
+          </div>
+
+          <div class="game-score-bar">
+            <div>Moves: <span id="gameMoves">0</span></div>
+            <div>Score: <span id="gameScore">0</span></div>
+            <div>Pairs Matched: <span id="gamePairs">0/4</span></div>
+          </div>
+
+          <div id="gameGrid" class="cards-game-container">
+            <!-- Dynamically populated card items -->
+          </div>
+        </div>
+
+        <!-- Feature Panel: Routine Game -->
+        <div id="panelRoutine" class="patient-panel hidden">
+          <div class="panel-header">
+            <h3 class="panel-title">Daily Routine Sequencing</h3>
+            <button type="button" class="btn-secondary" onclick="closePatientPanels()">Back</button>
+          </div>
+          <p class="patient-subtext">Order your morning steps from first to last:</p>
+
+          <div id="routineList" class="reminders-list">
+            <!-- Dynamically populated routine steps -->
+          </div>
+          <button type="button" class="btn-large-action" onclick="submitRoutineGame()">Submit Sequence</button>
+        </div>
+
+        <!-- Feature Panel: Reminders -->
+        <div id="panelReminders" class="patient-panel hidden">
+          <div class="panel-header">
+            <h3 class="panel-title">Today's Reminders</h3>
+            <button type="button" class="btn-secondary" onclick="closePatientPanels()">Back</button>
+          </div>
+
+          <div id="remindersContainer" class="reminders-list">
+            <!-- Dynamically loaded reminder items -->
+          </div>
+        </div>
+
+        <!-- Feature Panel: Voice Companion Chat -->
+        <div id="panelChat" class="patient-panel hidden">
+          <div class="panel-header">
+            <h3 class="panel-title">Voice &amp; Text Companion</h3>
+            <button type="button" class="btn-secondary" onclick="closePatientPanels()">Back</button>
+          </div>
+
+          <div id="chatMessages" class="chat-box">
+            <div class="chat-bubble bot">
+              Hello! I am your Smriti companion. How are you feeling today?
+            </div>
+          </div>
+
+          <form class="chat-input-bar" onsubmit="sendChatMessage(event)">
+            <input type="text" id="chatInput" class="chat-input-field" placeholder="Type or say something..." required>
+            <button type="submit" class="btn-large-action">Send</button>
+          </form>
+        </div>
+
+      </div>
+
+    </section>
 
     <!-- ====================================================================
          2. CAREGIVER DASHBOARD VIEW
          ==================================================================== -->
     <section id="caregiverView" class="caregiver-view hidden">
 
-      <!-- Login Card (If not authenticated) -->
-      <div id="caregiverAuthCard" class="auth-card section-card">
-        <div class="section-title-bar">
-          <h2 class="section-h2">Caregiver / Clinician Login</h2>
+      <div class="main-wrapper">
+
+        <div class="view-header-row">
+          <h2 class="view-title">Caregiver Dashboard</h2>
+          <button type="button" class="btn-back" onclick="switchView('landing')">← Back to home</button>
         </div>
-        <form onsubmit="handleLogin(event)">
-          <div class="form-group">
-            <label class="form-label" for="loginPhone">Phone Number</label>
-            <input type="text" id="loginPhone" class="form-control" value="919876543002" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="loginPassword">Password</label>
-            <input type="password" id="loginPassword" class="form-control" value="DemoPass123" required>
-          </div>
-          <button type="submit" class="btn-primary" style="width: 100%;">Sign In</button>
-          
-          <div class="demo-shortcut-bar">
-            <button type="button" class="btn-shortcut" onclick="quickFillLogin('919876543002')">Caregiver (919876543002)</button>
-            <button type="button" class="btn-shortcut" onclick="quickFillLogin('919876543003')">Clinician (919876543003)</button>
-          </div>
-        </form>
-      </div>
 
-      <!-- Main Caregiver Workspace (When logged in) -->
-      <div id="caregiverMainContent" class="hidden">
-        
-        <!-- Patient Roster & Overview Header -->
-        <div class="section-card">
+        <!-- Login Card (If not authenticated) -->
+        <div id="caregiverAuthCard" class="auth-card section-card">
           <div class="section-title-bar">
-            <h2 class="section-h2">Patient Cognitive Health Overview</h2>
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <label for="patientSelector" class="form-label" style="margin:0;">Select Patient:</label>
-              <select id="patientSelector" class="form-control" onchange="loadPatientDashboardData(this.value)">
-                <option value="6910b26a-369c-491d-b4d1-e8e950636528">Grandma Phukan (MCI Cohort - Assamese)</option>
-              </select>
-            </div>
+            <h2 class="section-h2">Caregiver / Clinician Login</h2>
           </div>
+          <form onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label class="form-label" for="loginPhone">Phone Number</label>
+              <input type="text" id="loginPhone" class="form-control" value="919876543002" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="loginPassword">Password</label>
+              <input type="password" id="loginPassword" class="form-control" value="DemoPass123" required>
+            </div>
+            <button type="submit" class="btn btn-blue" style="width: 100%;">Sign In <span class="btn-arrow" aria-hidden="true">▸</span></button>
 
-          <div class="metrics-summary-container">
-            <div class="metric-row">
-              <div>
+            <div class="demo-shortcut-bar">
+              <button type="button" class="btn-shortcut" onclick="quickFillLogin('919876543002')">Caregiver (919876543002)</button>
+              <button type="button" class="btn-shortcut" onclick="quickFillLogin('919876543003')">Clinician (919876543003)</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Main Caregiver Workspace (When logged in) -->
+        <div id="caregiverMainContent" class="hidden">
+
+          <!-- Patient Roster & Overview Header -->
+          <div class="section-card">
+            <div class="section-title-bar">
+              <h2 class="section-h2">Patient Cognitive Health Overview</h2>
+              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <label for="patientSelector" class="form-label" style="margin:0;">Select Patient:</label>
+                <select id="patientSelector" class="form-control" onchange="loadPatientDashboardData(this.value)">
+                  <option value="6910b26a-369c-491d-b4d1-e8e950636528">Grandma Phukan (MCI Cohort - Assamese)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="metrics-summary-container">
+              <div class="metric-row">
                 <div class="metric-label">7-Day Cognitive Accuracy</div>
                 <div class="metric-val" id="metricAccuracy">84.5%</div>
+                <span class="status-badge good">Normal Range</span>
               </div>
-              <span class="status-badge good">Normal Range</span>
-            </div>
 
-            <div class="metric-row">
-              <div>
-                <div class="metric-label">Medication & Routine Adherence</div>
+              <div class="metric-row">
+                <div class="metric-label">Medication &amp; Routine Adherence</div>
                 <div class="metric-val" id="metricCompliance">92.0%</div>
+                <span class="status-badge good">Optimal</span>
               </div>
-              <span class="status-badge good">Optimal</span>
-            </div>
 
-            <div class="metric-row">
-              <div>
+              <div class="metric-row">
                 <div class="metric-label">Average Game Response Time</div>
                 <div class="metric-val" id="metricResponseTime">4.2 sec</div>
+                <span class="status-badge warn">Slight Latency</span>
               </div>
-              <span class="status-badge warn">Slight Latency</span>
-            </div>
 
-            <div class="metric-row">
-              <div>
+              <div class="metric-row">
                 <div class="metric-label">Active Escalation Alerts</div>
                 <div class="metric-val" id="metricAlertCount">0</div>
-              </div>
-              <span class="status-badge good">No Active Escalations</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Schedule Reminder Management -->
-        <div class="section-card">
-          <div class="section-title-bar">
-            <h2 class="section-h2">Patient Reminder Schedules</h2>
-            <button type="button" class="btn-primary" onclick="toggleScheduleForm()">+ Schedule New Reminder</button>
-          </div>
-
-          <!-- New Reminder Form -->
-          <form id="scheduleForm" class="hidden" style="background-color: var(--bg-subtle); padding: 16px; border: 1px solid var(--border-color); margin-bottom: 16px;" onsubmit="createReminderSchedule(event)">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <div class="form-group">
-                <label class="form-label">Reminder Title</label>
-                <input type="text" id="schTitle" class="form-control" placeholder="e.g. Morning BP Medicine" required>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Type</label>
-                <select id="schType" class="form-control">
-                  <option value="MEDICATION">Medication</option>
-                  <option value="HYDRATION">Hydration</option>
-                  <option value="MEAL">Meal</option>
-                  <option value="EXERCISE">Exercise</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Time (24h)</label>
-                <input type="text" id="schTime" class="form-control" placeholder="08:00" value="08:00" required>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Cadence</label>
-                <select id="schCadence" class="form-control">
-                  <option value="DAILY">Daily</option>
-                  <option value="WEEKLY">Weekly</option>
-                </select>
+                <span class="status-badge good">No Active Escalations</span>
               </div>
             </div>
-            <button type="submit" class="btn-primary" style="margin-top: 8px;">Save Schedule</button>
-          </form>
-
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Type</th>
-                <th>Schedule Time</th>
-                <th>Cadence</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="caregiverScheduleTable">
-              <!-- Dynamically populated schedules -->
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Medical RAG Vector Search & Clinical Knowledge Base -->
-        <div class="section-card">
-          <div class="section-title-bar">
-            <h2 class="section-h2">Clinical Knowledge & RAG Search</h2>
-          </div>
-          <p class="text-secondary">Ask questions about patient history or clinical guidance using vector semantic search:</p>
-          
-          <form class="search-input-group" onsubmit="handleRagSearch(event)">
-            <input type="text" id="ragQueryInput" class="form-control" style="flex:1;" placeholder="e.g. What are early signs of cognitive decline in MCI?" required>
-            <button type="submit" class="btn-primary">Search RAG</button>
-          </form>
-
-          <div id="ragResultBox" class="rag-response-box hidden">
-            <!-- RAG response output -->
-          </div>
-        </div>
-
-        <!-- Compliance & Audit Log Viewer -->
-        <div class="section-card">
-          <div class="section-title-bar">
-            <h2 class="section-h2">DPDP Compliance & Security Audit Log</h2>
-            <button type="button" class="btn-secondary" onclick="loadAuditLogs()">Refresh Audit Trail</button>
           </div>
 
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Timestamp</th>
-                <th>Actor / User</th>
-                <th>Action</th>
-                <th>Purpose Scope</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody id="auditLogTable">
-              <!-- Dynamically loaded logs -->
-            </tbody>
-          </table>
+          <!-- Schedule Reminder Management -->
+          <div class="section-card">
+            <div class="section-title-bar">
+              <h2 class="section-h2">Patient Reminder Schedules</h2>
+              <button type="button" class="btn btn-blue" onclick="toggleScheduleForm()">+ Schedule New Reminder</button>
+            </div>
+
+            <!-- New Reminder Form -->
+            <form id="scheduleForm" class="hidden" style="background-color: var(--surface-periwinkle-mist); padding: var(--spacing-24); border: none; border-radius: var(--radius-2xl); margin-bottom: var(--spacing-16);" onsubmit="createReminderSchedule(event)">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                  <label class="form-label">Type</label>
+                  <select id="schType" class="form-control">
+                    <option value="medicine">Medicine</option>
+                    <option value="water">Water</option>
+                    <option value="food">Food</option>
+                    <option value="exercise">Exercise</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Time (24h)</label>
+                  <input type="text" id="schTime" class="form-control" placeholder="08:00" value="08:00" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Repeat</label>
+                  <select id="schCadence" class="form-control">
+                    <option value="daily">Every day</option>
+                    <option value="weekly">Weekly</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-blue" style="margin-top: 8px;">Save Schedule <span class="btn-arrow" aria-hidden="true">▸</span></button>
+            </form>
+
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Type</th>
+                  <th>Schedule Time</th>
+                  <th>Cadence</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="caregiverScheduleTable">
+                <!-- Dynamically populated schedules -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Medical RAG Vector Search & Clinical Knowledge Base -->
+          <div class="section-card">
+            <div class="section-title-bar">
+              <h2 class="section-h2">Clinical Knowledge &amp; RAG Search</h2>
+            </div>
+            <p class="t-body">Ask questions about patient history or clinical guidance using vector semantic search:</p>
+
+            <form class="search-input-group" onsubmit="handleRagSearch(event)">
+              <input type="text" id="ragQueryInput" class="form-control" style="flex:1;" placeholder="e.g. What are early signs of cognitive decline in MCI?" required>
+              <button type="submit" class="btn btn-blue">Search RAG <span class="btn-arrow" aria-hidden="true">▸</span></button>
+            </form>
+
+            <div id="ragResultBox" class="rag-response-box hidden">
+              <!-- RAG response output -->
+            </div>
+          </div>
+
+          <!-- Compliance & Audit Log Viewer -->
+          <div class="section-card">
+            <div class="section-title-bar">
+              <h2 class="section-h2">DPDP Compliance &amp; Security Audit Log</h2>
+              <button type="button" class="btn btn-ghost" onclick="loadAuditLogs()">Refresh Audit Trail</button>
+            </div>
+
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Actor / User</th>
+                  <th>Action</th>
+                  <th>Purpose Scope</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="auditLogTable">
+                <!-- Dynamically loaded logs -->
+              </tbody>
+            </table>
+          </div>
+
         </div>
 
       </div>
@@ -356,6 +547,23 @@
     </section>
 
   </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-cta">
+        <h2 class="t-serif t-heading">Smriti Reviving Memories, Restoring Smiles.</h2>
+        <div class="hero-actions">
+          <button type="button" class="btn btn-blue" onclick="switchView('patient')">Open Patient View <span class="btn-arrow" aria-hidden="true">▸</span></button>
+          <button type="button" class="btn btn-ghost" onclick="switchView('caregiver')">Caregiver Dashboard</button>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span class="t-caption">Smriti — Smart India Hackathon 2026 · Problem 26003 · MDoNER</span>
+        <span class="t-caption">Built for the North Eastern Region</span>
+      </div>
+    </div>
+  </footer>
 
   <script src="/static/app.js"></script>
 </body>

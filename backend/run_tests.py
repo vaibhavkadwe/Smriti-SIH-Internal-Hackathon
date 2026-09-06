@@ -48,9 +48,10 @@ def t_jwt_access():
 
 
 def t_jwt_refresh():
-    tok = AuthService.create_refresh_token({"sub": "12345"})
+    tok, jti = AuthService.create_refresh_token({"sub": "12345"})
     p = AuthService.verify_token(tok)
     assert p["sub"] == "12345"
+    assert p["jti"] == jti
 
 
 def t_jwt_invalid():
@@ -99,7 +100,8 @@ def t_link():
         patient_id=uuid.uuid4(),
         relationship_type=RelationshipTypeEnum.FAMILY,
     )
-    assert link.is_active is True
+    # Column default applies at flush, not construction — unset until then.
+    assert link.is_active is None
 
 
 def t_consent():
@@ -171,26 +173,26 @@ def t_content_packs_list():
 
 def t_generate_board_easy():
     board = generate_match_it_board("festivals_ner", difficulty_level=1)
-    assert board["pair_count"] == 4
-    assert board["total_cards"] == 8
-    assert len(board["cards"]) == 8
+    assert board["pair_count"] == 2
+    assert board["total_cards"] == 4
+    assert len(board["cards"]) == 4
 
 
 def t_generate_board_medium():
     board = generate_match_it_board("fruits_flora_ner", difficulty_level=2)
-    assert board["pair_count"] == 6
-    assert board["total_cards"] == 12
+    assert board["pair_count"] == 4
+    assert board["total_cards"] == 8
 
 
 def t_generate_board_hard():
     board = generate_match_it_board("heritage_household_ner", difficulty_level=3)
-    assert board["pair_count"] == 9
-    assert board["total_cards"] == 18
+    assert board["pair_count"] == 6
+    assert board["total_cards"] == 12
 
 
 run_test("List NER content packs", t_content_packs_list)
-run_test("Generate Match It board (Easy: 4 pairs)", t_generate_board_easy)
-run_test("Generate Match It board (Medium: 6 pairs)", t_generate_board_medium)
+run_test("Generate Match It board (Easy: 2 pairs)", t_generate_board_easy)
+run_test("Generate Match It board (Medium: 4 pairs)", t_generate_board_medium)
 run_test("Generate Match It board (Hard: 9 pairs)", t_generate_board_hard)
 
 # --- Routine Service Tests ---
@@ -203,7 +205,7 @@ from app.services.routine_service import (
 
 
 def t_default_routine():
-    assert len(DEFAULT_DAILY_ROUTINE) == 10
+    assert len(DEFAULT_DAILY_ROUTINE) == 11
     assert DEFAULT_DAILY_ROUTINE[0]["step_id"] == "wake_up"
     assert DEFAULT_DAILY_ROUTINE[-1]["step_id"] == "sleep"
 
@@ -221,7 +223,7 @@ def t_generate_routine_board_level3():
     board = generate_routine_sequencing_board(DEFAULT_DAILY_ROUTINE, difficulty_level=3)
     assert board["step_count"] == 6
     assert board["has_hints"] is False
-    assert board["has_icons"] is False
+    assert board["has_icons"] is True
 
 
 def t_validate_routine_perfect():

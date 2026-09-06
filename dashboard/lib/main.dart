@@ -14,6 +14,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'theme/monad_theme.dart';
+
 const String _baseUrl = String.fromEnvironment(
   'API_BASE_URL',
   defaultValue: 'http://localhost:8000',
@@ -206,31 +208,30 @@ class TrendChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      elevation: 0,
+      shape: Monad.softShape,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+            Text(title.toUpperCase(), style: Monad.monoCaption),
             const SizedBox(height: 10),
             SizedBox(
               height: 90,
               width: double.infinity,
               child: values.length < 2
-                  ? const Center(
-                      child: Text('Not enough data yet',
-                          style: TextStyle(color: Colors.grey)))
-                  : CustomPaint(painter: _TrendPainter(values: values, color: Colors.teal)),
+                  ? Center(
+                      child: Text('Not enough data yet', style: Monad.monoBodySm))
+                  : CustomPaint(
+                      painter: _TrendPainter(values: values, color: Monad.lakeBlue)),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               values.length < 2
                   ? ''
                   : 'last ${values.length} active days · ${_range()}$unitLabel',
-              style: const TextStyle(fontSize: 12, color: Colors.black54),
+              style: Monad.monoCaption,
             ),
           ],
         ),
@@ -298,15 +299,9 @@ class CaregiverDashboardApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Caregiver Dashboard — ElderCare',
+      title: 'Caregiver Dashboard — Smriti',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1B6B4A),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-      ),
+      theme: Monad.theme(),
       home: const _Root(),
     );
   }
@@ -401,6 +396,7 @@ class _LoginScreenState extends State<_LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Monad.parchment,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -410,41 +406,49 @@ class _LoginScreenState extends State<_LoginScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.dashboard, size: 72, color: Colors.teal),
-                const SizedBox(height: 8),
+                Container(
+                  width: 16,
+                  height: 16,
+                  alignment: Alignment.center,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: const BoxDecoration(
+                    color: Monad.lakeBlue,
+                    shape: BoxShape.circle,
+                  ),
+                ),
                 Text('Caregiver Dashboard',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineLarge),
-                const SizedBox(height: 24),
+                    style: Theme.of(context).textTheme.headlineMedium),
+                const SizedBox(height: 8),
+                Text('SMRITI · MEMORY ASSISTANCE PLATFORM',
+                    textAlign: TextAlign.center,
+                    style: Monad.monoCaption),
+                const SizedBox(height: 32),
                 TextField(
                   controller: _phone,
-                  decoration: const InputDecoration(
-                      labelText: 'Phone', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: 'Phone'),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 TextField(
                   controller: _password,
                   obscureText: true,
                   onSubmitted: (_) => _signIn(),
-                  decoration: const InputDecoration(
-                      labelText: 'Password', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: 'Password'),
                 ),
                 if (_error != null) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Text(_error!, textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red)),
+                      style: Monad.monoBodySm.copyWith(color: Monad.crimson)),
                 ],
-                const SizedBox(height: 22),
+                const SizedBox(height: 24),
                 FilledButton(
-                  style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16)),
                   onPressed: _busy ? null : _signIn,
                   child: _busy
                       ? const SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Sign In', style: TextStyle(fontSize: 18)),
+                      : const Text('Sign In'),
                 ),
               ],
             ),
@@ -591,7 +595,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     } on Exception catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red));
+            SnackBar(content: Text('Failed: $e')));
       }
     }
   }
@@ -600,7 +604,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Caregiver Dashboard — ElderCare'),
+        title: const Text('Caregiver Dashboard'),
         actions: [
           IconButton(
               tooltip: 'Compliance audit trail (admin)',
@@ -638,7 +642,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     if (patients.isEmpty) {
       return const Center(
         child: Text('No patients linked to this account yet.',
-            style: TextStyle(fontSize: 18, color: Colors.grey)),
+            style: Monad.monoBodyLg),
       );
     }
     final summary = _summary;
@@ -671,13 +675,15 @@ class _DashboardScreenState extends State<_DashboardScreen> {
 
   Widget _roster(List<Map<String, dynamic>> patients) {
     return Card(
+      elevation: 0,
+      shape: Monad.softShape,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: _selectedPatientId,
             isExpanded: true,
-            hint: const Text('Select patient'),
+            hint: Text('Select patient', style: Monad.monoBody),
             items: patients.map((p) {
               return DropdownMenuItem<String>(
                 value: p['patient_id'] as String,
@@ -685,7 +691,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                   '${p['name']} · ${p['district'] ?? 'NER'} · '
                   '${p['cognitive_baseline'] ?? ''} · '
                   '${(p['relationship_type'] ?? '').toString().toUpperCase()}',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: Monad.monoBody.copyWith(color: Monad.offBlack),
                 ),
               );
             }).toList(),
@@ -714,17 +720,19 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       children: [
         if (!isClinical) ...[
           Card(
-            color: Colors.amber.shade50,
+            elevation: 0,
+            color: Monad.gold.withValues(alpha: 0.35),
+            shape: Monad.softShape,
             child: const Padding(
               padding: EdgeInsets.all(14),
               child: Row(children: [
-                Icon(Icons.lock_outline, size: 22, color: Colors.deepOrange),
+                Icon(Icons.lock_outline, size: 22, color: Monad.graphite),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Basic view — clinical detail (accuracy, trends, flags) is '
                     'visible to linked clinical staff only.',
-                    style: TextStyle(fontSize: 14),
+                    style: Monad.monoBodySm,
                   ),
                 ),
               ]),
@@ -739,12 +747,11 @@ class _DashboardScreenState extends State<_DashboardScreen> {
               final wide = constraints.maxWidth >= 700;
               final tiles = [
                 _tile('Cognitive accuracy (7d)', '${accuracy.toStringAsFixed(0)}%',
-                    '${s['games_played'] ?? 0} games', accuracy >= 70 ? Colors.teal : Colors.orange),
+                    '${s['games_played'] ?? 0} games', Monad.offBlack),
                 _tile('Reminder compliance', '${compliance.toStringAsFixed(0)}%',
-                    '${s['reminders_acknowledged']}/${s['reminders_total']} acknowledged',
-                    compliance >= 75 ? Colors.green : Colors.red),
+                    '${s['reminders_acknowledged']}/${s['reminders_total']} acknowledged', Monad.offBlack),
                 _tile('Avg response time', speed > 0 ? '${(speed / 1000).toStringAsFixed(1)}s' : '—',
-                    'last 7 days', Colors.blueGrey),
+                    'last 7 days', Monad.offBlack),
               ];
               if (wide) {
                 return Row(
@@ -794,22 +801,23 @@ class _DashboardScreenState extends State<_DashboardScreen> {
         const SizedBox(height: 8),
         // Alerts
         if (alerts.isNotEmpty) ...[
-          Text('Active risk alerts',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red.shade700)),
+          Text('ACTIVE RISK ALERTS', style: Monad.monoLabel),
           const SizedBox(height: 8),
           for (final a in alerts.cast<Map<String, dynamic>>())
             Card(
+              elevation: 0,
               color: (a['severity'] == 'critical' || a['severity'] == 'warning')
-                  ? Colors.red.shade50
-                  : Colors.amber.shade50,
+                  ? Monad.coral.withValues(alpha: 0.18)
+                  : Monad.gold.withValues(alpha: 0.35),
+              shape: Monad.softShape,
               child: ListTile(
-                leading: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 30),
-                title: Text(a['summary'] as String? ?? 'Alert',
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('Type: ${a['trigger_type']} · ${a['severity']}'),
+                leading: Icon(Icons.warning_amber_rounded,
+                    color: (a['severity'] == 'critical' || a['severity'] == 'warning')
+                        ? Monad.crimson
+                        : Monad.graphite,
+                    size: 30),
+                title: Text(a['summary'] as String? ?? 'Alert', style: Monad.monoBody.copyWith(color: Monad.offBlack)),
+                subtitle: Text('Type: ${a['trigger_type']} · ${a['severity']}', style: Monad.monoBodySm),
                 trailing: TextButton(
                   onPressed: () => _ack(a['id'] as String),
                   child: const Text('Acknowledge'),
@@ -821,18 +829,20 @@ class _DashboardScreenState extends State<_DashboardScreen> {
         // Clinical insight
         if (isClinical)
           Card(
+            elevation: 0,
+            shape: Monad.softShape,
             child: ListTile(
               leading: Icon(
                 flags['cognitive_drop_detected'] == true
                     ? Icons.trending_down
                     : Icons.trending_up,
-                color: flags['cognitive_drop_detected'] == true ? Colors.red : Colors.green,
+                color: flags['cognitive_drop_detected'] == true ? Monad.crimson : Monad.offBlack,
                 size: 32,
               ),
               title: Text(flags['cognitive_drop_detected'] == true
                   ? 'Cognitive drop detected (<60% accuracy)'
-                  : 'Cognitive baseline stable'),
-              subtitle: Text('Reminder flag: ${flags['high_missed_reminders'] == true ? '3+ missed in 7 days' : 'none'}'),
+                  : 'Cognitive baseline stable', style: Monad.monoBody.copyWith(color: Monad.offBlack)),
+              subtitle: Text('Reminder flag: ${flags['high_missed_reminders'] == true ? '3+ missed in 7 days' : 'none'}', style: Monad.monoBodySm),
             ),
           ),
       ],
@@ -842,18 +852,18 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   Widget _schedulesCard() {
     final schedules = _schedules ?? const <Map<String, dynamic>>[];
     return Card(
+      elevation: 0,
+      shape: Monad.cardShape,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Reminder schedules',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            const Text(
-                'Times are local (IST). Format: HH:MM, comma-separated for multiple.',
-                style: TextStyle(fontSize: 12, color: Colors.black54)),
-            const SizedBox(height: 10),
+            Text('Reminder schedules', style: Monad.subheading),
+            const SizedBox(height: 8),
+            Text('Times are local (IST). Format: HH:MM, comma-separated for multiple.',
+                style: Monad.monoCaption),
+            const SizedBox(height: 16),
             for (final s in schedules.cast<Map<String, dynamic>>())
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -866,18 +876,19 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                           : s['reminder_type'] == 'food'
                               ? Icons.restaurant
                               : Icons.directions_walk,
-                  color: Colors.teal,
+                  color: Monad.offBlack,
                 ),
                 title: Text('${s['reminder_type']}'.toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('${s['cadence']} · ${s['is_active'] == true ? 'active' : 'paused'}'),
+                    style: Monad.monoLabel),
+                subtitle: Text('${s['cadence']} · ${s['is_active'] == true ? 'active' : 'paused'}', style: Monad.monoBodySm),
                 trailing: IconButton(
                   tooltip: 'Remove schedule',
                   icon: const Icon(Icons.delete_outline, size: 20),
+                  color: Monad.graphite,
                   onPressed: () => _removeSchedule(s['id'] as String),
                 ),
               ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             _addScheduleRow(),
           ],
         ),
@@ -911,7 +922,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
           const SizedBox(width: 10),
           IconButton(
             tooltip: 'Add schedule',
-            icon: const Icon(Icons.add_circle, color: Colors.teal, size: 32),
+            icon: const Icon(Icons.add_circle, color: Monad.lakeBlue, size: 32),
             onPressed: () => _addSchedule(type, timeCtl.text.trim()),
           ),
         ],
@@ -922,7 +933,9 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   Widget _auditPanel() {
     final logs = _auditLogs ?? const <Map<String, dynamic>>[];
     return Card(
-      color: Colors.blueGrey.shade50,
+      elevation: 0,
+      color: Monad.periwinkleMist,
+      shape: Monad.softShape,
       child: Container(
         constraints: const BoxConstraints(maxHeight: 300),
         child: ListView.builder(
@@ -933,11 +946,11 @@ class _DashboardScreenState extends State<_DashboardScreen> {
             return ListTile(
               dense: true,
               title: Text('${l['action']} · ${l['resource_type']}',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  style: Monad.monoBodySm.copyWith(color: Monad.offBlack)),
               subtitle: Text(
                 'by ${l['user_id']} · ${l['timestamp']}'
                 '${l['ip_address'] != null ? ' · ${l['ip_address']}' : ''}',
-                style: const TextStyle(fontSize: 11, color: Colors.black54),
+                style: Monad.monoCaption,
               ),
             );
           },
@@ -948,20 +961,20 @@ class _DashboardScreenState extends State<_DashboardScreen> {
 
   Widget _tile(String title, String value, String subtitle, Color color) {
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      elevation: 0,
+      shape: Monad.cardShape,
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: const TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            Text(title.toUpperCase(), style: Monad.monoCaption),
+            const SizedBox(height: 12),
             Text(value,
-                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: color)),
-            const SizedBox(height: 4),
-            Text(subtitle, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                style: Monad.subheading.copyWith(
+                    fontSize: 32, letterSpacing: -0.64, color: color)),
+            const SizedBox(height: 8),
+            Text(subtitle, style: Monad.monoBodySm),
           ],
         ),
       ),

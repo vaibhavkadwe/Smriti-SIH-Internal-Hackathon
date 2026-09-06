@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../models/shared_models.dart';
 import '../services/reminder_scheduler.dart';
 import '../services/reminder_service.dart';
+import '../theme/monad_theme.dart';
 
 class RemindersScreen extends StatefulWidget {
   final String patientId;
@@ -89,9 +90,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
         content: Text(
           '${schedule.reminderType.name.toUpperCase()} done — well done! '
           '${reachedServer ? '' : '(offline — will sync)'}',
-          style: const TextStyle(fontSize: 18),
         ),
-        backgroundColor: Colors.green.shade700,
         duration: const Duration(seconds: 3),
       ),
     );
@@ -101,8 +100,8 @@ class _RemindersScreenState extends State<RemindersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daily Reminders / দৈনিক সোঁৱৰণী', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
+        title: const Text('Daily Reminders / দৈনিক সোঁৱৰণী'),
+        centerTitle: false,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -129,9 +128,9 @@ class _RemindersScreenState extends State<RemindersScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 80, color: Colors.teal.shade300),
+            Icon(icon, size: 80, color: Monad.smoke),
             const SizedBox(height: 16),
-            Text(text, textAlign: TextAlign.center, style: const TextStyle(fontSize: 18)),
+            Text(text, textAlign: TextAlign.center, style: Monad.monoBodyLg),
             if (retry != null) ...[
               const SizedBox(height: 16),
               ElevatedButton(onPressed: retry, child: const Text('Retry')),
@@ -145,21 +144,26 @@ class _RemindersScreenState extends State<RemindersScreen> {
   Widget _scheduleCard(ReminderScheduleModel schedule) {
     final done = _justAcked.contains(schedule.id);
     final hasOpenEvent = _openEventBySchedule.containsKey(schedule.id);
-    final color = done ? Colors.grey : _colorFor(schedule.reminderType);
     return Card(
-      elevation: 4,
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      shape: Monad.cardShape,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: color,
-                  child: Icon(_iconFor(schedule.reminderType), color: Colors.white, size: 32),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Monad.parchment,
+                    border: Border.all(color: Monad.ash),
+                    borderRadius: BorderRadius.circular(Monad.radiusMin),
+                  ),
+                  child:
+                      Icon(_iconFor(schedule.reminderType), color: Monad.offBlack, size: 20),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -168,21 +172,19 @@ class _RemindersScreenState extends State<RemindersScreen> {
                     children: [
                       Text(
                         schedule.reminderType.name.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: color,
+                        style: Monad.monoLabel.copyWith(
+                          color: done ? Monad.smoke : Monad.offBlack,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Time: ${schedule.cadence}',
-                        style: const TextStyle(fontSize: 16, color: Colors.grey),
+                        style: Monad.monoBodySm,
                       ),
                     ],
                   ),
                 ),
-                if (done) const Icon(Icons.check_circle, color: Colors.green, size: 32),
+                if (done) const Icon(Icons.check_circle, color: Monad.offBlack, size: 32),
               ],
             ),
             const SizedBox(height: 18),
@@ -190,19 +192,15 @@ class _RemindersScreenState extends State<RemindersScreen> {
               width: double.infinity,
               height: 58,
               child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
                 onPressed: (done || !hasOpenEvent) ? null : () => _handleAcknowledge(schedule),
-                icon: const Icon(Icons.check_circle, size: 28, color: Colors.white),
+                icon: const Icon(Icons.check_circle, size: 28, color: Monad.white),
                 label: Text(
                   done
                       ? 'Done / সম্পন্ন'
                       : hasOpenEvent
                           ? 'I Did This / কৰিলোঁ'
                           : 'No reminder due now / এতিয়া নাই',
-                  style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                  style: Monad.monoLabel.copyWith(color: Monad.white),
                 ),
               ),
             ),
@@ -222,19 +220,6 @@ class _RemindersScreenState extends State<RemindersScreen> {
         return Icons.restaurant;
       case ReminderType.exercise:
         return Icons.directions_walk;
-    }
-  }
-
-  Color _colorFor(ReminderType type) {
-    switch (type) {
-      case ReminderType.medicine:
-        return Colors.red.shade400;
-      case ReminderType.water:
-        return Colors.blue.shade400;
-      case ReminderType.food:
-        return Colors.orange.shade400;
-      case ReminderType.exercise:
-        return Colors.green.shade400;
     }
   }
 }

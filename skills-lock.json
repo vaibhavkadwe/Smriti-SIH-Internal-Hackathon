@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "andrej-karpathy": {
+      "source": "sickn33/agentic-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/andrej-karpathy/SKILL.md",
+      "computedHash": "8f101ed28a29cf4ea08e96235ce7b0e4fcce7b45d893f3560fdb9fc97aef5a6c"
+    },
     "codebase-design": {
       "source": "mattpocock/skills",
       "sourceType": "github",

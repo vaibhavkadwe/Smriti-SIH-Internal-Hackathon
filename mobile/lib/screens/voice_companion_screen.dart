@@ -8,6 +8,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
+import '../theme/monad_theme.dart';
 
 class VoiceCompanionScreen extends StatefulWidget {
   final String patientId;
@@ -82,15 +83,17 @@ class _VoiceCompanionScreenState extends State<VoiceCompanionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Aai Companion / মৰমৰ সংগী', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
+        title: const Text('Aai Companion / মৰমৰ সংগী'),
+        centerTitle: false,
         actions: [
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: _selectedLanguage,
-              icon: const Icon(Icons.language, color: Colors.teal),
+              icon: const Icon(Icons.language, color: Monad.offBlack),
               items: _languages.entries
-                  .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(fontSize: 14))))
+                  .map((e) => DropdownMenuItem(
+                      value: e.key,
+                      child: Text(e.value, style: Monad.monoBodySm)))
                   .toList(),
               onChanged: (v) {
                 if (v != null) setState(() => _selectedLanguage = v);
@@ -110,10 +113,10 @@ class _VoiceCompanionScreenState extends State<VoiceCompanionScreen> {
                   _companionCard(),
                   if (_wasFallback) ...[
                     const SizedBox(height: 8),
-                    const Center(
+                    Center(
                       child: Text(
                         'Companion is in offline mode — connect to enable full conversation.',
-                        style: TextStyle(fontSize: 13, color: Colors.orange),
+                        style: Monad.monoCaption.copyWith(color: Monad.crimson),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -130,23 +133,26 @@ class _VoiceCompanionScreenState extends State<VoiceCompanionScreen> {
 
   Widget _companionCard() {
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      color: Colors.teal.shade50,
+      elevation: 0,
+      shape: Monad.cardShape,
+      color: Monad.periwinkleMist,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            CircleAvatar(
-              radius: 36,
-              backgroundColor: Colors.teal.shade300,
-              child: const Icon(Icons.record_voice_over, size: 42, color: Colors.white),
+            Container(
+              width: 16,
+              height: 16,
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: const BoxDecoration(
+                color: Monad.lakeBlue,
+                shape: BoxShape.circle,
+              ),
             ),
-            const SizedBox(height: 14),
             Text(
               _reply,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, height: 1.4),
+              style: Monad.monoBodyLg.copyWith(color: Monad.offBlack, height: 1.4),
             ),
           ],
         ),
@@ -157,7 +163,7 @@ class _VoiceCompanionScreenState extends State<VoiceCompanionScreen> {
   Widget _inputBar() {
     return Container(
       padding: const EdgeInsets.all(12),
-      color: Colors.grey.shade100,
+      color: Monad.parchment,
       child: Row(
         children: [
           Expanded(
@@ -165,13 +171,16 @@ class _VoiceCompanionScreenState extends State<VoiceCompanionScreen> {
               controller: _messageController,
               textInputAction: TextInputAction.send,
               onSubmitted: _send,
-              style: const TextStyle(fontSize: 18),
+              style: Monad.monoLabel,
               decoration: InputDecoration(
                 hintText: 'Type a message…',
                 filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                fillColor: Monad.parchment,
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(Monad.radiusMin),
+                    borderSide: const BorderSide(color: Monad.ash)),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
               ),
             ),
           ),

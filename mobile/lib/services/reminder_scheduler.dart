@@ -34,7 +34,7 @@ class ReminderScheduler {
       requestSoundPermission: true,
     );
     await _plugin.initialize(
-      const InitializationSettings(android: android, iOS: ios),
+      settings: const InitializationSettings(android: android, iOS: ios),
     );
     _initialized = true;
   }
@@ -44,11 +44,11 @@ class ReminderScheduler {
     await initialize();
     for (final time in _parseTimes(schedule.cadence)) {
       await _plugin.zonedSchedule(
-        schedule.id.hashCode * 31 + time.minute + time.hour * 60,
-        'Reminder — ${schedule.reminderType.name.toUpperCase()}',
-        'Time for your ${schedule.reminderType.name} routine.',
-        _nextInstanceOf(time),
-        const NotificationDetails(
+        id: schedule.id.hashCode * 31 + time.minute + time.hour * 60,
+        title: 'Reminder — ${schedule.reminderType.name.toUpperCase()}',
+        body: 'Time for your ${schedule.reminderType.name} routine.',
+        scheduledDate: _nextInstanceOf(time),
+        notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails(
             'reminders',
             'Daily reminders',
@@ -59,8 +59,6 @@ class ReminderScheduler {
           iOS: DarwinNotificationDetails(),
         ),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
       );
     }
   }
@@ -68,7 +66,8 @@ class ReminderScheduler {
   Future<void> cancelSchedule(ReminderScheduleModel schedule) async {
     await initialize();
     for (final time in _parseTimes(schedule.cadence)) {
-      await _plugin.cancel(schedule.id.hashCode * 31 + time.minute + time.hour * 60);
+      await _plugin.cancel(
+          id: schedule.id.hashCode * 31 + time.minute + time.hour * 60);
     }
   }
 

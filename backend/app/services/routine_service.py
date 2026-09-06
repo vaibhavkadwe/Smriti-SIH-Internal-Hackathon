@@ -139,7 +139,7 @@ DEFAULT_DAILY_ROUTINE: List[Dict[str, Any]] = [
 # Step counts by difficulty
 ROUTINE_DIFFICULTY_STEPS: Dict[int, int] = {
     1: 3,  # Level 1: 3 steps + full hints + icons
-    2: 5,  # Level 2: 5 steps + partial hints
+    2: 4,  # Level 2: 4 steps + partial hints
     3: 6,  # Level 3: 6 steps + text-only (no hints)
 }
 
@@ -213,8 +213,8 @@ def generate_routine_sequencing_board(
     return {
         "difficulty_level": difficulty_level,
         "step_count": step_count,
-        "has_hints": difficulty_level == 1,
-        "has_icons": difficulty_level <= 2,
+        "has_hints": difficulty_level <= 2,
+        "has_icons": True,
         "shuffled_items": shuffled_items,
         "correct_sequence": correct_sequence,
     }

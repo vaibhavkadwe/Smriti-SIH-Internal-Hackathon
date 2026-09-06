@@ -17,17 +17,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/local_content_packs.dart';
+import '../games/game_analytics_engine.dart';
+import '../games/game_labels.dart';
+import '../games/game_visuals.dart';
 import '../models/game_models.dart';
 import '../models/shared_models.dart';
 import '../services/api_service.dart';
 import '../services/offline_sync_service.dart';
 import '../services/routine_service.dart';
+import '../theme/monad_theme.dart';
 
-/// Warm, calm, high-contrast palette for elderly eyes (NER tones).
+/// Monad palette (DESIGN.md tokens).
 class _NERPalette {
-  static const headerBg = Color(0xFFFFF3E0); // warm cream
-  static const accent = Color(0xFFB45309); // warm terracotta
-  static const textDark = Color(0xFF3E2723); // deep warm brown
+  static const headerBg = Monad.gold; // warm band
+  static const accent = Monad.lakeBlue; // single accent
+  static const textDark = Monad.offBlack;
 }
 
 class RoutineScreen extends StatefulWidget {
@@ -49,16 +53,19 @@ class RoutineScreen extends StatefulWidget {
 class _RoutineScreenState extends State<RoutineScreen> {
   final ApiService _api = ApiService.instance;
   final RoutineService _logic = RoutineService();
+  final GameAnalyticsEngine _engine = GameAnalyticsEngine.instance;
 
   RoutineGameState? _game;
   bool _loading = true;
   String? _error;
   Timer? _stuckTimer;
+  bool _hinting = false;
+  int _longestStuckSeconds = 0;
+  int _secondsSinceCorrect = 0;
+  int _hintsUsed = 0;
 
   /// Buffered actions for this session (drives the offline sync path).
   final List<GameAction> _bufferedActions = [];
-
-  static const _stuckThreshold = Duration(seconds: 10);
 
   @override
   void initState() {
@@ -133,17 +140,35 @@ class _RoutineScreenState extends State<RoutineScreen> {
     _stuckTimer?.cancel();
     final game = _game;
     if (game == null || game.state != RoutineState.playing) return;
-    _stuckTimer = Timer(_stuckThreshold, () {
+    _stuckTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       final current = _game;
       if (current == null || current.state != RoutineState.playing) return;
-      // One shot per idle episode; rearmed by the next tap.
-      _bufferAndSend(GameAction(
-        id: 'stuck_${DateTime.now().millisecondsSinceEpoch}',
-        sessionId: current.sessionId,
-        actionType: 'stuck',
-        actionData: const {'stuck_duration_ms': 10000},
-        timestamp: DateTime.now(),
-      ));
+      _secondsSinceCorrect++;
+      if (_secondsSinceCorrect > _longestStuckSeconds) {
+        _longestStuckSeconds = _secondsSinceCorrect;
+      }
+      // Adaptive rule: >=15s stuck (or excessive errors) -> subtle hint.
+      // L3 grants fewer free hints (max 1) per the difficulty spec.
+      final hintBudgetLeft = widget.difficultyLevel >= 3 ? _hintsUsed < 1 : true;
+      if (!_hinting &&
+          hintBudgetLeft &&
+          _engine.shouldHintNow(
+            secondsSinceLastCorrect: _secondsSinceCorrect,
+            incorrectMoves: current.errors,
+            difficultyLevel: widget.difficultyLevel,
+          )) {
+        setState(() {
+          _hinting = true;
+          _hintsUsed++;
+        });
+        _bufferAndSend(GameAction(
+          id: 'stuck_${DateTime.now().millisecondsSinceEpoch}',
+          sessionId: current.sessionId,
+          actionType: 'stuck',
+          actionData: {'stuck_duration_ms': _secondsSinceCorrect * 1000},
+          timestamp: DateTime.now(),
+        ));
+      }
     });
   }
 
@@ -154,6 +179,10 @@ class _RoutineScreenState extends State<RoutineScreen> {
   void _onStepTap(RoutineStep step) {
     final game = _game;
     if (game == null) return;
+    if (_hinting) setState(() => _hinting = false);
+    _secondsSinceCorrect = 0;
+    GameVisuals.selectionFeedback(); // soft neutral haptic on every tap
+
     final previousCorrect = game.correctPlacements;
     final next = _logic.handleStepPlacement(game, step);
     if (next == null) return;
@@ -172,7 +201,10 @@ class _RoutineScreenState extends State<RoutineScreen> {
       responseTimeMs: next.responseTimesMs.last,
       timestamp: DateTime.now(),
     ));
-    _softFeedback(next.correctPlacements > previousCorrect);
+    if (next.correctPlacements > previousCorrect) {
+      GameVisuals.positiveFeedback(); // light haptic on a correct placement
+    }
+    // Wrong placements: the step simply isn't accepted — zero punishment.
 
     if (next.isComplete) {
       _stuckTimer?.cancel();
@@ -213,51 +245,71 @@ class _RoutineScreenState extends State<RoutineScreen> {
     }
 
     if (!mounted) return;
+
+    // ---- Adaptive engine: structured performance report ----
+    final session = CognitiveGameSession(
+      sessionId: finalState.sessionId,
+      patientId: widget.patientId,
+      gameType: 'routine_sequencing',
+      difficultyLevel: widget.difficultyLevel,
+      timeTakenInSeconds:
+          DateTime.now().difference(finalState.gameStartedAt).inSeconds,
+      totalAttempts: validation.totalCount,
+      correctMoves: validation.correctCount,
+      incorrectMoves: validation.totalCount - validation.correctCount,
+      isCompleted: true,
+      stuckDurationSeconds: _longestStuckSeconds,
+      avgResponseTimeMs: finalState.avgResponseTimeMs.round(),
+    );
+    final report = _engine.evaluate(session);
+    debugPrint('Smriti report: ${report.toJson()}');
+    // TODO(sync): queue report to the caregiver dashboard API (fields match
+    // its 14-day accuracy / response-time trend charts and risk flags).
+
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Routine Completed! 🎉', style: TextStyle(fontSize: 24)),
+        backgroundColor: Monad.parchment,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Monad.radiusCard), side: const BorderSide(color: Monad.ash)),
+        title: Text('Routine completed', style: Monad.subheading),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text('Accuracy: ${validation.accuracyPct.toStringAsFixed(1)}%',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                style: Monad.monoLabel),
             const SizedBox(height: 8),
             Text('${validation.correctCount} of ${validation.totalCount} steps placed correctly',
-                style: const TextStyle(fontSize: 16)),
+                style: Monad.monoBody),
             if (summary == null) ...[
               const SizedBox(height: 12),
-              const Text('Offline: result will sync when you reconnect.',
-                  style: TextStyle(color: Colors.orange)),
+              Text('Offline: result will sync when you reconnect.',
+                  style: Monad.monoBodySm.copyWith(color: Monad.crimson)),
             ],
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
-            child: const Text('Done', style: TextStyle(fontSize: 18)),
+            child: const Text('Done'),
           ),
         ],
       ),
     );
   }
 
-  /// Soft auditory feedback hook — silent no-op until audio assets land.
-  // ponytail: wire SystemSound.play or a localized asset here when the
-  // audio pack is added; never called on wrong answers (no punishment).
-  void _softFeedback(bool positive) {}
-
   @override
   Widget build(BuildContext context) {
     final game = _game;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daily Routine / দৈনিক অভ্যাস', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
+        title: const Text('Daily Routine / দৈনিক অভ্যাস'),
+        centerTitle: false,
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Text(GameLabels.of('en', 'common.loading'),
+                  style: Monad.monoBodyLg))
           : _error != null
               ? Center(
                   child: Padding(
@@ -265,22 +317,41 @@ class _RoutineScreenState extends State<RoutineScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.cloud_off, size: 64, color: Colors.grey),
+                        const Icon(Icons.cloud_off, size: 64, color: Monad.smoke),
                         const SizedBox(height: 12),
-                        Text(_error!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 18)),
+                        Text(_error!, textAlign: TextAlign.center, style: Monad.monoBodyLg),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: _startGame,
-                          child: const Text('Try Again', style: TextStyle(fontSize: 18)),
+                          child: const Text('Try Again'),
                         ),
                       ],
                     ),
                   ),
                 )
               : game == null
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(
+                      child: Text(GameLabels.of('en', 'common.loading'),
+                          style: Monad.monoBodyLg))
                   : Column(
                       children: [
+                        // Persistent, unmissable home control.
+                        SafeArea(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                            child: Row(
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: () =>
+                                      Navigator.of(context).maybePop(),
+                                  icon: const Icon(Icons.home, size: 22),
+                                  label: Text(GameLabels.of('en', 'common.home')),
+                                  style: Monad.ghostPill(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                         _progressHeader(game),
                         Expanded(
                           child: game.isComplete
@@ -297,8 +368,8 @@ class _RoutineScreenState extends State<RoutineScreen> {
         ? game.board.correctSequence[game.stepsPlaced]
         : null;
     final stepLabel = game.isComplete
-        ? 'Completed'
-        : 'Step ${game.stepsPlaced + 1} of ${game.totalSteps}';
+        ? GameLabels.of('en', 'routine.complete.title')
+        : '${GameLabels.of('en', 'routine.placed')}: ${game.stepsPlaced}/${game.totalSteps}';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -307,18 +378,14 @@ class _RoutineScreenState extends State<RoutineScreen> {
         children: [
           Text(
             stepLabel,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: _NERPalette.textDark,
-            ),
+            style: Monad.monoLabel.copyWith(color: _NERPalette.textDark),
           ),
           if (nextId != null && game.board.hasHints)
-            const Padding(
-              padding: EdgeInsets.only(top: 4),
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'Hint: tap what you do next',
-                style: TextStyle(fontSize: 16, color: _NERPalette.accent),
+                GameLabels.of('en', 'routine.tapNext'),
+                style: Monad.monoBodySm.copyWith(color: _NERPalette.textDark),
               ),
             ),
         ],
@@ -328,43 +395,50 @@ class _RoutineScreenState extends State<RoutineScreen> {
 
   Widget _stepGrid(RoutineGameState game) {
     final available = game.shuffledSteps.where((s) => !s.isSelected).toList();
+    final hintedStepId = _hinting && game.stepsPlaced < game.totalSteps
+        ? game.board.correctSequence[game.stepsPlaced]
+        : null;
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        childAspectRatio: 1.6,
+        // >=60dp tall on 360dp phones; extra height for two-line labels.
+        childAspectRatio: 1.5,
       ),
       itemCount: available.length,
       itemBuilder: (context, index) {
         final step = available[index];
+        final isHintTarget = step.stepId == hintedStepId;
         return Semantics(
           button: true,
           label: step.getTitle(widget.languageCode),
           child: Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 0,
+            color: Monad.parchment,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(Monad.radiusMin),
+              side: BorderSide(
+                color: isHintTarget ? Monad.gold : Monad.ash,
+                width: isHintTarget ? 3 : 1,
+              ),
+            ),
             child: InkWell(
-              borderRadius: BorderRadius.circular(16),
               onTap: () => _onStepTap(step),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (game.board.hasIcons && step.icon != null)
+                    if (step.icon != null)
                       Icon(_iconFor(step.icon!), size: 34, color: _NERPalette.accent),
                     const SizedBox(height: 6),
                     Text(
                       step.getTitle(widget.languageCode),
                       textAlign: TextAlign.center,
                       maxLines: 2,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: _NERPalette.textDark,
-                      ),
+                      style: Monad.monoLabel.copyWith(color: _NERPalette.textDark),
                     ),
                   ],
                 ),

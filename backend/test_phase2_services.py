@@ -57,23 +57,23 @@ def t_match_it_board_difficulty1():
     from app.services.content_packs import generate_match_it_board
 
     board = generate_match_it_board("festivals_ner", difficulty_level=1)
-    assert board["pair_count"] == 4
-    assert board["total_cards"] == 8
-    assert len(board["cards"]) == 8
+    assert board["pair_count"] == 2
+    assert board["total_cards"] == 4
+    assert len(board["cards"]) == 4
 
 
 def t_match_it_board_difficulty3():
     from app.services.content_packs import generate_match_it_board
 
     board = generate_match_it_board("heritage_household_ner", difficulty_level=3)
-    assert board["pair_count"] == 9
-    assert board["total_cards"] == 18
+    assert board["pair_count"] == 6
+    assert board["total_cards"] == 12
 
 
 run_test("Import content_packs service", t_content_packs_import)
 run_test("List NER content packs (3 total)", t_content_packs_list)
-run_test("Generate Match It board (Difficulty 1: 4 pairs)", t_match_it_board_difficulty1)
-run_test("Generate Match It board (Difficulty 3: 9 pairs)", t_match_it_board_difficulty3)
+run_test("Generate Match It board (Difficulty 1: 2 pairs)", t_match_it_board_difficulty1)
+run_test("Generate Match It board (Difficulty 3: 6 pairs)", t_match_it_board_difficulty3)
 
 # Test 2: Routine Service
 print("\nRoutine Sequencing Service:")
@@ -91,7 +91,8 @@ def t_routine_import():
 def t_default_routine_structure():
     from app.services.routine_service import DEFAULT_DAILY_ROUTINE
 
-    assert len(DEFAULT_DAILY_ROUTINE) == 10
+    # 11 seeded steps (wake_up .. sleep); guard the tail so additions fail loudly.
+    assert len(DEFAULT_DAILY_ROUTINE) == 11
     assert DEFAULT_DAILY_ROUTINE[0]["step_id"] == "wake_up"
     assert DEFAULT_DAILY_ROUTINE[-1]["step_id"] == "sleep"
     assert all("title_en" in s for s in DEFAULT_DAILY_ROUTINE)
@@ -120,7 +121,20 @@ def t_routine_board_level3():
     board = generate_routine_sequencing_board(DEFAULT_DAILY_ROUTINE, difficulty_level=3)
     assert board["step_count"] == 6
     assert board["has_hints"] is False
-    assert board["has_icons"] is False
+    # Icons stay on at every level — they are the accessibility aid, and the
+    # client spec keeps them (hard mode reduces HINTS, not icons).
+    assert board["has_icons"] is True
+
+
+def t_routine_board_level2():
+    from app.services.routine_service import (
+        DEFAULT_DAILY_ROUTINE,
+        generate_routine_sequencing_board,
+    )
+
+    board = generate_routine_sequencing_board(DEFAULT_DAILY_ROUTINE, difficulty_level=2)
+    assert board["step_count"] == 4
+    assert board["has_hints"] is True
 
 
 def t_validate_routine_perfect():
@@ -149,6 +163,7 @@ def t_validate_routine_partial():
 run_test("Import routine_service", t_routine_import)
 run_test("Default routine has 10 steps with multilingual titles", t_default_routine_structure)
 run_test("Generate routine board (Level 1: 3 steps + hints)", t_routine_board_level1)
+run_test("Generate routine board (Level 2: 4 steps)", t_routine_board_level2)
 run_test("Generate routine board (Level 3: 6 steps, no hints)", t_routine_board_level3)
 run_test("Validate routine — perfect sequence", t_validate_routine_perfect)
 run_test("Validate routine — partial accuracy (2/3 correct)", t_validate_routine_partial)

@@ -20,32 +20,41 @@ let gameScore = 0;
 document.addEventListener('DOMContentLoaded', () => {
   if (token) {
     checkCurrentUser();
+    switchView('landing');
   } else {
-    // Default to Patient View for ease of access
-    switchView('patient');
-    loadPatientReminders();
+    // Landing page is the default entry face
+    switchView('landing');
   }
 });
 
 // View Switching Logic
 function switchView(mode) {
-  const patientSec = document.getElementById('patientView');
-  const caregiverSec = document.getElementById('caregiverView');
-  const btnPatient = document.getElementById('btnPatientMode');
-  const btnCaregiver = document.getElementById('btnCaregiverMode');
+  const aliases = {
+    landing: 'landingView',
+    patient: 'patientView',
+    caregiver: 'caregiverView',
+    landingView: 'landingView',
+    patientView: 'patientView',
+    caregiverView: 'caregiverView',
+  };
+  const views = ['landingView', 'patientView', 'caregiverView'];
+  const sections = {
+    landingView: document.getElementById('landingView'),
+    patientView: document.getElementById('patientView'),
+    caregiverView: document.getElementById('caregiverView'),
+  };
+  const showKey = aliases[mode] || 'landingView';
 
-  if (mode === 'patient') {
-    patientSec.classList.remove('hidden');
-    caregiverSec.classList.add('hidden');
-    btnPatient.classList.add('active');
-    btnCaregiver.classList.remove('active');
+  views.forEach(v => sections[v].classList.add('hidden'));
+  sections[showKey].classList.remove('hidden');
+
+  // Nav button states (login pill hides when session exists)
+  const loginBtn = document.getElementById('navLoginBtn');
+  if (loginBtn) loginBtn.classList.toggle('hidden', !!token && showKey !== 'caregiverView');
+
+  if (showKey === 'patientView') {
     loadPatientReminders();
-  } else {
-    patientSec.classList.add('hidden');
-    caregiverSec.classList.remove('hidden');
-    btnPatient.classList.remove('active');
-    btnCaregiver.classList.add('active');
-    
+  } else if (showKey === 'caregiverView') {
     if (token) {
       document.getElementById('caregiverAuthCard').classList.add('hidden');
       document.getElementById('caregiverMainContent').classList.remove('hidden');
@@ -55,6 +64,23 @@ function switchView(mode) {
       document.getElementById('caregiverMainContent').classList.add('hidden');
     }
   }
+}
+
+// Landing helpers
+function scrollToSection(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function dismissAnnouncement() {
+  document.getElementById('announcementBar').style.display = 'none';
+}
+
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const open = item.getAttribute('data-open') === 'true';
+  item.setAttribute('data-open', open ? 'false' : 'true');
+  btn.setAttribute('aria-expanded', open ? 'false' : 'true');
 }
 
 // Language Selector Handler
@@ -273,7 +299,7 @@ async function loadPatientReminders() {
 
   try {
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-    const res = await fetch(`${API_BASE}/reminders/events`, { headers });
+    const res = await fetch(`${API_BASE}/reminders/patients/${demoPatientId}/events`, { headers });
     
     if (res.ok) {
       const events = await res.json();
@@ -460,10 +486,34 @@ function logout() {
   token = null;
   localStorage.removeItem('smriti_token');
   document.getElementById('userInfoBadge').classList.add('hidden');
-  switchView('patient');
+  switchView('landing');
 }
 
 async function loadCaregiverDashboard() {
+  // Resolve the caregiver's real roster, then load their first patient.
+  try {
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const me = await res.json();
+      const rosterRes = await fetch(`${API_BASE}/dashboard/caregivers/${me.id}/patients`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (rosterRes.ok) {
+        const patients = await rosterRes.json();
+        const selector = document.getElementById('patientSelector');
+        if (patients.length > 0) {
+          selector.innerHTML = patients.map(p =>
+            `<option value="${p.patient_id}">${p.name} (${p.cognitive_baseline ?? ''} — ${p.district ?? 'NER'})</option>`
+          ).join('');
+          demoPatientId = patients[0].patient_id;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Roster fetch failed, using demo patient');
+  }
   loadPatientDashboardMetrics(demoPatientId);
   loadCaregiverSchedules();
   loadAuditLogs();
@@ -471,17 +521,21 @@ async function loadCaregiverDashboard() {
 
 async function loadPatientDashboardMetrics(patientId) {
   try {
-    const res = await fetch(`${API_BASE}/dashboard/metrics/${patientId}`, {
+    const res = await fetch(`${API_BASE}/dashboard/patients/${patientId}/summary`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (res.ok) {
       const data = await res.json();
-      if (data.accuracy_score !== undefined) document.getElementById('metricAccuracy').innerText = `${(data.accuracy_score * 100).toFixed(1)}%`;
-      if (data.compliance_score !== undefined) document.getElementById('metricCompliance').innerText = `${(data.compliance_score * 100).toFixed(1)}%`;
-      if (data.avg_response_time !== undefined) document.getElementById('metricResponseTime').innerText = `${data.avg_response_time.toFixed(1)} sec`;
+      if (data.accuracy_pct !== undefined) document.getElementById('metricAccuracy').innerText = `${Number(data.accuracy_pct).toFixed(1)}%`;
+      if (data.compliance_pct !== undefined) document.getElementById('metricCompliance').innerText = `${Number(data.compliance_pct).toFixed(1)}%`;
+      if (data.avg_response_time_ms !== undefined && data.avg_response_time_ms !== null) {
+        document.getElementById('metricResponseTime').innerText = `${(data.avg_response_time_ms / 1000).toFixed(1)} sec`;
+      }
+      const alerts = data.active_alerts ?? [];
+      document.getElementById('metricAlertCount').innerText = String(alerts.length);
     }
   } catch (err) {
-    console.log('Metrics mock active');
+    console.log('Metrics unavailable');
   }
 }
 
@@ -494,10 +548,9 @@ function toggleScheduleForm() {
 
 async function createReminderSchedule(event) {
   event.preventDefault();
-  const title = document.getElementById('schTitle').value;
-  const type = document.getElementById('schType').value;
-  const time = document.getElementById('schTime').value;
-  const cadence = document.getElementById('schCadence').value;
+  const type = document.getElementById('schType').value.toLowerCase();
+  const time = document.getElementById('schTime').value.trim();
+  const cadenceMode = document.getElementById('schCadence').value.toLowerCase();
 
   try {
     const res = await fetch(`${API_BASE}/reminders/schedules`, {
@@ -508,15 +561,12 @@ async function createReminderSchedule(event) {
       },
       body: JSON.stringify({
         patient_id: demoPatientId,
-        title,
-        type,
-        scheduled_time: time,
-        cadence
+        reminder_type: type,
+        cadence: `${cadenceMode}@${time}`
       })
     });
 
     if (res.ok) {
-      alert('New reminder schedule added successfully!');
       toggleScheduleForm();
       loadCaregiverSchedules();
     } else {
@@ -530,50 +580,27 @@ async function createReminderSchedule(event) {
 async function loadCaregiverSchedules() {
   const tbody = document.getElementById('caregiverScheduleTable');
   try {
-    const res = await fetch(`${API_BASE}/reminders/schedules?patient_id=${demoPatientId}`, {
+    const res = await fetch(`${API_BASE}/reminders/schedules/${demoPatientId}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (res.ok) {
       const schedules = await res.json();
       if (schedules.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td>Morning BP Pill</td>
-            <td>MEDICATION</td>
-            <td>08:00 AM</td>
-            <td>DAILY</td>
-            <td><span class="status-badge good">Active</span></td>
-          </tr>
-          <tr>
-            <td>Afternoon Hydration</td>
-            <td>HYDRATION</td>
-            <td>14:00 PM</td>
-            <td>DAILY</td>
-            <td><span class="status-badge good">Active</span></td>
-          </tr>
-        `;
+        tbody.innerHTML = '<tr><td colspan="5">No schedules yet — add one above.</td></tr>';
         return;
       }
       tbody.innerHTML = schedules.map(s => `
         <tr>
-          <td>${s.title}</td>
-          <td>${s.type}</td>
-          <td>${s.scheduled_time || '08:00'}</td>
-          <td>${s.cadence || 'DAILY'}</td>
-          <td><span class="status-badge good">Active</span></td>
+          <td>${s.reminder_type.toUpperCase()}</td>
+          <td>${s.reminder_type}</td>
+          <td>${s.cadence}</td>
+          <td>${s.cadence.includes('weekly') ? 'WEEKLY' : 'DAILY'}</td>
+          <td><span class="status-badge ${s.is_active ? 'good' : 'warn'}">${s.is_active ? 'Active' : 'Paused'}</span></td>
         </tr>
       `).join('');
     }
   } catch (err) {
-    tbody.innerHTML = `
-      <tr>
-        <td>Morning BP Pill</td>
-        <td>MEDICATION</td>
-        <td>08:00 AM</td>
-        <td>DAILY</td>
-        <td><span class="status-badge good">Active</span></td>
-      </tr>
-    `;
+    tbody.innerHTML = '<tr><td colspan="5">Could not load schedules.</td></tr>';
   }
 }
 
@@ -627,15 +654,7 @@ async function loadAuditLogs() {
     if (res.ok) {
       const logs = await res.json();
       if (!logs || logs.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td>${new Date().toISOString().substring(0, 16)}</td>
-            <td>caregiver_user</td>
-            <td>VIEW_METRICS</td>
-            <td>health_data</td>
-            <td>Accessed patient cognitive trends</td>
-          </tr>
-        `;
+        tbody.innerHTML = '<tr><td colspan="5">No audit entries yet.</td></tr>';
         return;
       }
       tbody.innerHTML = logs.map(l => `
@@ -647,16 +666,12 @@ async function loadAuditLogs() {
           <td>${l.details || 'Success'}</td>
         </tr>
       `).join('');
+    } else if (res.status === 403) {
+      tbody.innerHTML = '<tr><td colspan="5">Audit trail is admin-only — log in as an admin to view the compliance log.</td></tr>';
+    } else {
+      tbody.innerHTML = '<tr><td colspan="5">Could not load audit trail.</td></tr>';
     }
   } catch (err) {
-    tbody.innerHTML = `
-      <tr>
-        <td>${new Date().toISOString().substring(0, 16)}</td>
-        <td>caregiver_user</td>
-        <td>VIEW_METRICS</td>
-        <td>health_data</td>
-        <td>Accessed patient cognitive trends</td>
-      </tr>
-    `;
+    tbody.innerHTML = '<tr><td colspan="5">Could not load audit trail.</td></tr>';
   }
 }

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../data/local_content_packs.dart';
 import '../models/shared_models.dart';
 import '../services/api_service.dart';
+import '../theme/monad_theme.dart';
 import 'match_it_screen.dart';
 
 class PackPickerScreen extends StatefulWidget {
@@ -66,8 +67,8 @@ class _PackPickerScreenState extends State<PackPickerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Choose a Game', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
+        title: const Text('Choose a Game'),
+        centerTitle: false,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -76,7 +77,7 @@ class _PackPickerScreenState extends State<PackPickerScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(_error!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 17)),
+                      Text(_error!, textAlign: TextAlign.center, style: Monad.monoBodyLg),
                       const SizedBox(height: 16),
                       ElevatedButton(onPressed: _load, child: const Text('Retry')),
                     ],
@@ -103,24 +104,28 @@ class _PackPickerScreenState extends State<PackPickerScreen> {
                         itemBuilder: (context, index) {
                           final pack = _packs![index];
                           return Card(
-                            elevation: 3,
+                            elevation: 0,
                             margin: const EdgeInsets.only(bottom: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: Monad.cardShape,
                             child: ListTile(
-                              contentPadding: const EdgeInsets.all(16),
-                              leading: CircleAvatar(
-                                radius: 28,
-                                backgroundColor: Colors.teal.shade100,
-                                child: const Icon(Icons.celebration, color: Colors.teal, size: 30),
+                              contentPadding: const EdgeInsets.all(24),
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Monad.parchment,
+                                  border: Border.all(color: Monad.ash),
+                                  borderRadius: BorderRadius.circular(Monad.radiusMin),
+                                ),
+                                child: const Icon(Icons.celebration, color: Monad.offBlack, size: 20),
                               ),
-                              title: Text(pack.name,
-                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                              title: Text(pack.name, style: Monad.subheading),
                               subtitle: Text(
                                 '${pack.region} • ${pack.itemCount} items\n${pack.description}',
-                                style: const TextStyle(fontSize: 15),
+                                style: Monad.monoBodySm,
                               ),
                               isThreeLine: true,
-                              trailing: const Icon(Icons.chevron_right, size: 36),
+                              trailing: Icon(Icons.chevron_right, size: 36, color: Monad.graphite),
                               onTap: () => _start(pack),
                             ),
                           );

@@ -18,8 +18,8 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.18
   path_provider: ^2.1.1
   path: ^1.8.3
-  flutter_local_notifications: ^16.3.0
-  timezone: ^0.9.2
+  flutter_local_notifications: ^22.3.0 # was ^16.3.0: v16 fails to compile against SDK 36 (ambiguous bigLargeIcon)
+  timezone: ^0.11.1
 
   # Networking, state & persistence
   http: ^1.1.0
@@ -31,6 +31,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
   drift_dev: ^2.14.0
   build_runner: ^2.4.7
   flutter_lints: ^2.0.0
@@ -40,3 +42,13 @@ flutter:
   assets:
     - assets/images/match_it/
     - assets/audio/
+    - assets/fonts/
+    - assets/games/
+
+  fonts:
+    - family: Newsreader
+      fonts:
+        - asset: assets/fonts/Newsreader.ttf
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono.ttf

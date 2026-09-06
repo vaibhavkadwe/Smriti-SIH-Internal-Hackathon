@@ -17,6 +17,7 @@ import 'screens/voice_companion_screen.dart';
 import 'services/api_service.dart';
 import 'services/auth_session.dart';
 import 'services/offline_sync_service.dart';
+import 'theme/monad_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,21 +31,9 @@ class ElderCareApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ElderCare Companion',
+      title: 'Smriti Companion',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1B6B4A), // NER deep green
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        // High-contrast, large text for elderly users
-        textTheme: const TextTheme(
-          displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-          bodyLarge: TextStyle(fontSize: 20),
-          labelLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-      ),
+      theme: Monad.theme(),
       home: const _AuthGate(),
     );
   }
@@ -142,70 +131,73 @@ class _AuthScreenState extends State<AuthScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(Icons.volunteer_activism, size: 72, color: Colors.teal.shade400),
-                  const SizedBox(height: 8),
-                  Text(
-                    'ElderCare Companion',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.displayLarge,
+                Container(
+                  width: 16,
+                  height: 16,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: const BoxDecoration(
+                    color: Monad.lakeBlue,
+                    shape: BoxShape.circle,
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'স্বাস্থ্য আৰু মনৰ চৰ্চা (Health & Mind Care)',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 28),
-                  if (_registering) ...[
-                    TextFormField(
-                      controller: _name,
-                      style: const TextStyle(fontSize: 18),
-                      decoration: const InputDecoration(labelText: 'Your name', border: OutlineInputBorder()),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Name is required' : null,
-                    ),
-                    const SizedBox(height: 14),
-                  ],
+                ),
+                Text(
+                  'Smriti',
+                  textAlign: TextAlign.center,
+                  style: Monad.heading,
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'স্বাস্থ্য আৰু মনৰ চৰ্চা (Health & Mind Care)',
+                  textAlign: TextAlign.center,
+                  style: Monad.monoBodySm,
+                ),
+                const SizedBox(height: 28),
+                if (_registering) ...[
                   TextFormField(
-                    controller: _phone,
-                    keyboardType: TextInputType.phone,
-                    style: const TextStyle(fontSize: 18),
-                    decoration: const InputDecoration(labelText: 'Phone number', border: OutlineInputBorder()),
-                    validator: (v) => (v == null || v.trim().length < 6) ? 'Enter a valid phone number' : null,
+                    controller: _name,
+                    style: Monad.monoLabel,
+                    decoration: const InputDecoration(labelText: 'Your name'),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Name is required' : null,
                   ),
                   const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _password,
-                    obscureText: true,
-                    style: const TextStyle(fontSize: 18),
-                    decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
-                    validator: (v) => (v == null || v.length < 6) ? 'At least 6 characters' : null,
-                  ),
-                  if (_error != null) ...[
-                    const SizedBox(height: 12),
-                    Text(_error!, textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.red, fontSize: 15)),
-                  ],
-                  const SizedBox(height: 22),
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    onPressed: _busy ? null : _submit,
-                    child: _busy
-                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                        : Text(_registering ? 'Create Account' : 'Sign In'),
-                  ),
-                  TextButton(
-                    onPressed: _busy ? null : () => setState(() => _registering = !_registering),
-                    child: Text(
-                      _registering
-                          ? 'Already have an account? Sign in'
-                          : 'New patient? Register here',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ),
                 ],
+                TextFormField(
+                  controller: _phone,
+                  keyboardType: TextInputType.phone,
+                  style: Monad.monoLabel,
+                  decoration: const InputDecoration(labelText: 'Phone number'),
+                  validator: (v) => (v == null || v.trim().length < 6) ? 'Enter a valid phone number' : null,
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _password,
+                  obscureText: true,
+                  style: Monad.monoLabel,
+                  decoration: const InputDecoration(labelText: 'Password'),
+                  validator: (v) => (v == null || v.length < 6) ? 'At least 6 characters' : null,
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_error!, textAlign: TextAlign.center,
+                      style: Monad.monoBodySm.copyWith(color: Monad.crimson)),
+                ],
+                const SizedBox(height: 22),
+                FilledButton(
+                  onPressed: _busy ? null : _submit,
+                  child: _busy
+                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Text(_registering ? 'Create Account' : 'Sign In'),
+                ),
+                TextButton(
+                  onPressed: _busy ? null : () => setState(() => _registering = !_registering),
+                  child: Text(
+                    _registering
+                        ? 'Already have an account? Sign in'
+                        : 'New patient? Register here',
+                    style: Monad.monoBodySm.copyWith(color: Monad.offBlack),
+                  ),
+                ),
+              ],
               ),
             ),
           ),
@@ -305,7 +297,7 @@ class _ProfileSetupState extends State<_ProfileSetup> {
     } on Exception catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not create profile: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Could not create profile: $e')),
         );
       }
     } finally {
@@ -322,20 +314,26 @@ class _ProfileSetupState extends State<_ProfileSetup> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.face_retouching_natural, size: 80, color: Colors.teal),
-            const SizedBox(height: 16),
-            const Text('Tell us your name to get started', style: TextStyle(fontSize: 22)),
+            Container(
+              width: 16,
+              height: 16,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: const BoxDecoration(
+                color: Monad.lakeBlue,
+                shape: BoxShape.circle,
+              ),
+            ),
+            Text('Tell us your name to get started', style: Monad.subheading),
             const SizedBox(height: 20),
             TextField(
               controller: _name,
-              style: const TextStyle(fontSize: 20),
-              decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Your name'),
+              style: Monad.monoLabel,
+              decoration: const InputDecoration(labelText: 'Your name'),
             ),
             const SizedBox(height: 24),
             FilledButton(
-              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 40)),
               onPressed: _busy ? null : _create,
-              child: const Text('Continue', style: TextStyle(fontSize: 20)),
+              child: const Text('Continue'),
             ),
           ],
         ),
@@ -352,8 +350,8 @@ class _PatientHome extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ElderCare Companion'),
-        centerTitle: true,
+        title: const Text('Smriti Companion'),
+        centerTitle: false,
         actions: [
           IconButton(
             tooltip: 'Sign out',
@@ -370,7 +368,6 @@ class _PatientHome extends StatelessWidget {
             icon: Icons.extension,
             title: 'Play Memory Match',
             subtitle: 'Train your memory with NER themes',
-            color: Colors.teal,
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const PackPickerScreen()),
             ),
@@ -380,7 +377,6 @@ class _PatientHome extends StatelessWidget {
             icon: Icons.event_note,
             title: 'Daily Routine Game',
             subtitle: 'Sequence your daily activities',
-            color: Colors.indigo,
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => RoutineScreen(
@@ -396,7 +392,6 @@ class _PatientHome extends StatelessWidget {
             icon: Icons.alarm,
             title: 'Reminders',
             subtitle: 'Medicine, water, food & exercise',
-            color: Colors.orange,
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => RemindersScreen(patientId: patientId),
@@ -408,7 +403,6 @@ class _PatientHome extends StatelessWidget {
             icon: Icons.record_voice_over,
             title: 'Talk to Aai Companion',
             subtitle: 'A warm voice to talk with',
-            color: Colors.pink,
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => VoiceCompanionScreen(patientId: patientId),
@@ -420,30 +414,50 @@ class _PatientHome extends StatelessWidget {
     );
   }
 
+  // Feature-card pattern (DESIGN.md): 1px ash border, 40px radius,
+  // 40px padding, mono icon, serif 24px title, mono 16px graphite body.
   Widget _homeButton(
     BuildContext context, {
     required IconData icon,
     required String title,
     required String subtitle,
-    required Color color,
     required VoidCallback onTap,
   }) {
     return Card(
-      elevation: 3,
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(18),
-        minVerticalPadding: 12,
-        leading: CircleAvatar(
-          radius: 30,
-          backgroundColor: color.withValues(alpha: 0.15),
-          child: Icon(icon, color: color, size: 32),
-        ),
-        title: Text(title, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 15)),
-        trailing: const Icon(Icons.chevron_right, size: 34),
+      shape: Monad.cardShape,
+      child: InkWell(
         onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Monad.parchment,
+                  border: Border.all(color: Monad.ash),
+                  borderRadius: BorderRadius.circular(Monad.radiusMin),
+                ),
+                child: Icon(icon, color: Monad.offBlack, size: 20),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: Monad.subheading),
+                    const SizedBox(height: 8),
+                    Text(subtitle, style: Monad.monoBody),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: Monad.graphite, size: 32),
+            ],
+          ),
+        ),
       ),
     );
   }

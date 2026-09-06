@@ -1,4 +1,5 @@
 import bcrypt
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
@@ -36,13 +37,18 @@ class AuthService:
         return encoded_jwt
 
     @staticmethod
-    def create_refresh_token(data: dict) -> str:
-        """Create a JWT refresh token."""
+    def create_refresh_token(data: dict) -> tuple[str, str]:
+        """Create a single-use refresh token. Returns (token, jti).
+
+        The jti is stored on the user row; /auth/refresh only accepts the
+        token whose jti matches, and issuing a new pair rotates it.
+        """
         to_encode = data.copy()
         expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-        to_encode.update({"exp": expire})
+        jti = uuid.uuid4().hex
+        to_encode.update({"exp": expire, "jti": jti})
         encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-        return encoded_jwt
+        return encoded_jwt, jti
 
     @staticmethod
     def verify_token(token: str) -> Optional[dict]:

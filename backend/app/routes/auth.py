@@ -43,15 +43,19 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account disabled")
+    refresh, jti = AuthService.create_refresh_token({"sub": str(user.id)})
+    user.refresh_jti = jti  # any previous token dies on this login
+    await db.commit()
     return TokenResponse(
         access_token=AuthService.create_access_token({"sub": str(user.id), "role": user.role.value}),
-        refresh_token=AuthService.create_refresh_token({"sub": str(user.id)}),
+        refresh_token=refresh,
     )
 
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
-    """Exchange a valid refresh token for a fresh access + refresh token pair."""
+    """Single-use rotation: only the current jti is accepted; a new pair
+    revokes the presented token."""
     payload = AuthService.verify_token(body.refresh_token)
     if payload is None or not payload.get("sub"):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
@@ -60,16 +64,26 @@ async def refresh_token(body: RefreshRequest, db: AsyncSession = Depends(get_db)
     user = result.scalar_one_or_none()
     if user is None or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+    if user.refresh_jti is None or payload.get("jti") != user.refresh_jti:
+        # Reused or superseded token: revoke the whole chain.
+        user.refresh_jti = None
+        await db.commit()
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token already used or revoked")
 
+    refresh, jti = AuthService.create_refresh_token({"sub": str(user.id)})
+    user.refresh_jti = jti
+    await db.commit()
     return TokenResponse(
         access_token=AuthService.create_access_token({"sub": str(user.id), "role": user.role.value}),
-        refresh_token=AuthService.create_refresh_token({"sub": str(user.id)}),
+        refresh_token=refresh,
     )
 
 
 @router.post("/logout")
-async def logout(current_user: User = Depends(get_current_user)):
-    """Log out. JWT is stateless, so the client discards its tokens."""
+async def logout(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Revoke the current refresh token (JWT access stays stateless)."""
+    current_user.refresh_jti = None
+    await db.commit()
     return {"status": "logged_out"}
 
 

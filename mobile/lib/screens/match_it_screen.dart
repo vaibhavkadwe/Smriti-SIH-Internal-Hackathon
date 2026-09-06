@@ -18,21 +18,25 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/local_content_packs.dart';
+import '../games/game_analytics_engine.dart';
+import '../games/game_labels.dart';
+import '../games/game_visuals.dart';
 import '../models/game_models.dart';
 import '../models/shared_models.dart';
 import '../services/api_service.dart';
 import '../services/auth_session.dart';
 import '../services/match_it_service.dart';
 import '../services/offline_sync_service.dart';
+import '../theme/monad_theme.dart';
 
-/// Warm, calm, high-contrast palette for elderly eyes (NER tones).
+/// Monad palette for the memory cards (DESIGN.md tokens).
 class _NERPalette {
-  static const cardBack = Color(0xFFB45309); // warm terracotta
-  static const cardFace = Color(0xFFFFFBF5); // warm cream
-  static const matchedBg = Color(0xFFE8F5E9); // soft success green
-  static const matchedBorder = Color(0xFF2E7D32);
-  static const faceBorder = Color(0xFFD6A456); // soft gold
-  static const faceText = Color(0xFF3E2723); // deep warm brown
+  static const cardBack = Monad.parchment; // card resting on parchment
+  static const cardFace = Monad.parchment; // face reveals on parchment too
+  static const matchedBg = Monad.mint; // mint celebration fill
+  static const matchedBorder = Monad.mint;
+  static const faceBorder = Monad.lakeBlue; // flipped = the blue accent moment
+  static const faceText = Monad.offBlack;
 }
 
 class MatchItScreen extends StatefulWidget {
@@ -54,6 +58,7 @@ class MatchItScreen extends StatefulWidget {
 class _MatchItScreenState extends State<MatchItScreen> {
   final ApiService _api = ApiService.instance;
   final MatchItService _logic = MatchItService();
+  final GameAnalyticsEngine _engine = GameAnalyticsEngine.instance;
 
   MatchItGameState? _game;
   String? _sessionId;
@@ -62,10 +67,13 @@ class _MatchItScreenState extends State<MatchItScreen> {
   Timer? _stuckTimer;
   bool _offline = false;
 
+  /// Set while the adaptive engine's subtle hint is showing.
+  bool _hinting = false;
+  int _longestStuckSeconds = 0;
+  int _secondsSinceCorrect = 0;
+
   /// Buffered actions for this session (drives the offline sync path).
   final List<GameAction> _bufferedActions = [];
-
-  static const _stuckThreshold = Duration(seconds: 10);
 
   @override
   void initState() {
@@ -145,20 +153,37 @@ class _MatchItScreenState extends State<MatchItScreen> {
     _stuckTimer?.cancel();
     final game = _game;
     if (game == null || game.state != MatchItState.playing) return;
-    _stuckTimer = Timer(_stuckThreshold, () {
+    _stuckTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       final current = _game;
       if (current == null || current.state != MatchItState.playing) return;
       final sessionId = _sessionId;
       if (sessionId == null) return;
-      // One shot per idle episode; rearmed by the next tap.
-      _bufferAndSend(GameAction(
-        id: 'stuck_${DateTime.now().millisecondsSinceEpoch}',
-        sessionId: sessionId,
-        actionType: 'stuck',
-        actionData: const {'stuck_duration_ms': 10000},
-        timestamp: DateTime.now(),
-      ));
+      _secondsSinceCorrect++;
+      if (_secondsSinceCorrect > _longestStuckSeconds) {
+        _longestStuckSeconds = _secondsSinceCorrect;
+      }
+      // Adaptive rule: >=15s stuck OR too many incorrect moves -> subtle hint.
+      if (!_hinting &&
+          _engine.shouldHintNow(
+            secondsSinceLastCorrect: _secondsSinceCorrect,
+            incorrectMoves: current.incorrectMatches,
+            difficultyLevel: widget.difficultyLevel,
+          )) {
+        setState(() => _hinting = true);
+        // One stuck telemetry event per idle episode; rearmed on next tap.
+        _bufferAndSend(GameAction(
+          id: 'stuck_${DateTime.now().millisecondsSinceEpoch}',
+          sessionId: sessionId,
+          actionType: 'stuck',
+          actionData: {'stuck_duration_ms': _secondsSinceCorrect * 1000},
+          timestamp: DateTime.now(),
+        ));
+      }
     });
+  }
+
+  void _clearHint() {
+    if (_hinting) setState(() => _hinting = false);
   }
 
   // ------------------------------------------------------------------
@@ -168,6 +193,9 @@ class _MatchItScreenState extends State<MatchItScreen> {
   void _onCardTap(MatchItCard card) {
     final game = _game;
     if (game == null || game.state != MatchItState.playing) return;
+    _clearHint();
+    _secondsSinceCorrect = 0;
+    GameVisuals.selectionFeedback(); // soft haptic on every tap (neutral)
 
     final wasSecondFlip = game.flippedCards[0] != null;
     final previousCorrect = game.correctMatches;
@@ -191,7 +219,10 @@ class _MatchItScreenState extends State<MatchItScreen> {
         timestamp: DateTime.now(),
       ));
     }
-    _softFeedback(next.state == MatchItState.checking ? false : true);
+    if (next.correctMatches > previousCorrect) {
+      GameVisuals.positiveFeedback(); // light haptic + soft tone on match
+    }
+    // Wrong answers: cards simply flip back — no punishment feedback.
 
     if (next.state == MatchItState.checking) {
       _stuckTimer?.cancel();
@@ -213,6 +244,26 @@ class _MatchItScreenState extends State<MatchItScreen> {
   Future<void> _completeAndShowResults(MatchItGameState finalState) async {
     final sessionId = _sessionId;
     if (sessionId == null) return;
+
+    // ---- Adaptive engine: build the structured performance report ----
+    final session = CognitiveGameSession(
+      sessionId: sessionId,
+      patientId: AuthSession.instance.user?.id ?? 'demo_patient',
+      gameType: 'match_it',
+      difficultyLevel: widget.difficultyLevel,
+      timeTakenInSeconds:
+          DateTime.now().difference(finalState.gameStartedAt).inSeconds,
+      totalAttempts: finalState.attempts,
+      correctMoves: finalState.correctMatches,
+      incorrectMoves: finalState.incorrectMatches,
+      isCompleted: true,
+      stuckDurationSeconds: _longestStuckSeconds,
+      avgResponseTimeMs: finalState.avgResponseTimeMs.round(),
+    );
+    final report = _engine.evaluate(session);
+    debugPrint('Smriti report: ${report.toJson()}');
+    // TODO(sync): queue report.toJson() to the caregiver dashboard API once
+    // the reports endpoint lands; fields already match its trend charts.
 
     GameSessionSummary? summary;
     try {
@@ -247,7 +298,9 @@ class _MatchItScreenState extends State<MatchItScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Game Completed! 🎉', style: TextStyle(fontSize: 24)),
+        backgroundColor: Monad.parchment,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Monad.radiusCard), side: const BorderSide(color: Monad.ash)),
+        title: Text('Game completed', style: Monad.subheading),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -256,9 +309,9 @@ class _MatchItScreenState extends State<MatchItScreen> {
             _resultRow('Average response', '${finalState.avgResponseTimeMs.toStringAsFixed(0)} ms'),
             if (summary == null) ...[
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Offline: result will sync when you reconnect.',
-                style: TextStyle(color: Colors.orange, fontSize: 14),
+                style: Monad.monoBodySm.copyWith(color: Monad.crimson),
               ),
             ],
           ],
@@ -266,24 +319,19 @@ class _MatchItScreenState extends State<MatchItScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Back', style: TextStyle(fontSize: 18)),
+            child: const Text('Back'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
               _restart();
             },
-            child: const Text('Play Again', style: TextStyle(fontSize: 18)),
+            child: const Text('Play Again'),
           ),
         ],
       ),
     );
   }
-
-  /// Soft auditory feedback hook — silent no-op until audio assets land.
-  // ponytail: wire SystemSound.play or a localized asset here when the
-  // audio pack is added; never called on wrong answers (no punishment).
-  void _softFeedback(bool positive) {}
 
   Widget _resultRow(String label, String value) {
     return Padding(
@@ -291,8 +339,8 @@ class _MatchItScreenState extends State<MatchItScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 16, color: Colors.grey)),
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(label, style: Monad.monoBodySm),
+          Text(value, style: Monad.monoLabel.copyWith(color: Monad.offBlack)),
         ],
       ),
     );
@@ -314,8 +362,8 @@ class _MatchItScreenState extends State<MatchItScreen> {
     final game = _game;
     return Scaffold(
       appBar: AppBar(
-        title: Text('Match It: ${widget.packName}', style: const TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
+        title: Text('Match It: ${widget.packName}'),
+        centerTitle: false,
         actions: [
           if (game != null)
             Padding(
@@ -323,7 +371,7 @@ class _MatchItScreenState extends State<MatchItScreen> {
               child: Center(
                 child: Text(
                   '${game.matchedPairs}/${game.totalPairs}',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: Monad.monoLabel,
                 ),
               ),
             ),
@@ -334,52 +382,100 @@ class _MatchItScreenState extends State<MatchItScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.cloud_off, size: 64, color: Colors.grey),
+                  const Icon(Icons.cloud_off, size: 64, color: Monad.smoke),
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: Text(
                       _error!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 18),
+                      style: Monad.monoBodyLg,
                     ),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _startGame,
-                    child: const Text('Try Again', style: TextStyle(fontSize: 18)),
+                    child: const Text('Try Again'),
                   ),
                 ],
               ),
             )
           : game == null
-              ? const Center(child: CircularProgressIndicator())
-              : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  // 4 columns keeps every touch target >=60dp on 360dp phones
-                  // (level-3's 6 columns gave ~46dp cells — below the
-                  // 60dp elderly-accessibility floor).
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: 0.8,
+              ? Center(
+                  child: Text(
+                    GameLabels.of('en', 'common.loading'),
+                    style: Monad.monoBodyLg,
                   ),
-                  itemCount: game.cards.length,
-                  itemBuilder: (context, index) => _CardView(
-                    card: game.cards[index],
-                    onTap: () => _onCardTap(game.cards[index]),
-                  ),
+                )
+              : Column(
+                  children: [
+                    // Persistent, unmissable home control on every screen.
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        child: Row(
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: () => Navigator.of(context).maybePop(),
+                              icon: const Icon(Icons.home, size: 22),
+                              label: Text(GameLabels.of('en', 'common.home')),
+                              style: Monad.ghostPill(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GridView.builder(
+                        padding: const EdgeInsets.all(16),
+                        // Columns per spec grids: L1 2x2, L2 4x2, L3 4x3.
+                        // 2 columns keeps L1 touch targets huge (>=120dp).
+                        gridDelegate:
+                            SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: game.totalPairs <= 2 ? 2 : 4,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.85,
+                        ),
+                        itemCount: game.cards.length,
+                        itemBuilder: (context, index) => _CardView(
+                          card: game.cards[index],
+                          hinting: _hinting &&
+                              _isHintCard(game, game.cards[index]),
+                          onTap: () => _onCardTap(game.cards[index]),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
     );
+  }
+
+  /// Subtle hint target: the un-flipped partner of any flipped card, or the
+  /// first un-matched card when nothing is flipped (engine's "try this one").
+  bool _isHintCard(MatchItGameState game, MatchItCard card) {
+    if (card.isMatched || card.isFlipped) return false;
+    final flippedId = game.flippedCards.whereType<String>().firstOrNull;
+    if (flippedId == null) {
+      // Nothing flipped: highlight one card of the first unmatched pair.
+      return game.cards.indexOf(card) ==
+          game.cards.indexWhere((c) => !c.isMatched && !c.isFlipped);
+    }
+    final flipped = game.cards.firstWhere((c) => c.id == flippedId);
+    return card.pairId == flipped.pairId;
   }
 }
 
 class _CardView extends StatelessWidget {
   final MatchItCard card;
   final VoidCallback onTap;
+  final bool hinting;
 
-  const _CardView({required this.card, required this.onTap});
+  const _CardView({
+    required this.card,
+    required this.onTap,
+    this.hinting = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -387,7 +483,7 @@ class _CardView extends StatelessWidget {
     return Semantics(
       button: true,
       label: revealed
-          ? card.labelLocal
+          ? card.labelEn
           : 'Card ${card.id}',
       child: GestureDetector(
         onTap: card.isMatched ? null : onTap,
@@ -399,42 +495,52 @@ class _CardView extends StatelessWidget {
                 : revealed
                     ? _NERPalette.cardFace
                     : _NERPalette.cardBack,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(Monad.radiusMin),
             border: Border.all(
-              color: card.isMatched
-                  ? _NERPalette.matchedBorder
-                  : revealed
-                      ? _NERPalette.faceBorder
-                      : _NERPalette.cardBack,
-              width: 2,
+              // Card state is conveyed by border + content, never color
+              // alone: back = ash hairline + motif icon, flipped = thick
+              // blue, matched = mint + check glyph + label.
+              color: hinting
+                  ? Monad.gold
+                  : card.isMatched
+                      ? _NERPalette.matchedBorder
+                      : revealed
+                          ? _NERPalette.faceBorder
+                          : Monad.ash,
+              width: hinting ? 3 : (revealed || card.isMatched ? 2 : 1),
             ),
           ),
           child: Center(
             child: revealed
                 ? Padding(
-                    padding: const EdgeInsets.all(4),
+                    padding: const EdgeInsets.all(6),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         if (card.isMatched)
                           const Icon(Icons.check_circle,
-                              color: Color(0xFF2E7D32), size: 28),
-                        const SizedBox(height: 2),
+                              color: Monad.offBlack, size: 24),
+                        GameVisuals.face(
+                          imageKey: card.imageKey,
+                          label: card.labelEn,
+                          iconSize: 40,
+                        ),
+                        const SizedBox(height: 4),
                         Text(
                           card.labelLocal,
                           textAlign: TextAlign.center,
-                          maxLines: 3,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                          maxLines: 2,
+                          style: Monad.monoCaption.copyWith(
                             color: _NERPalette.faceText,
+                            fontSize: 12,
                           ),
                         ),
                       ],
                     ),
                   )
+                // Card back: neutral motif icon — state readable without color.
                 : const Icon(Icons.self_improvement,
-                    color: Colors.white, size: 40),
+                    color: Monad.smoke, size: 40),
           ),
         ),
       ),

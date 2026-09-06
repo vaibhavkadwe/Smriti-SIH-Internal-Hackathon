@@ -4,6 +4,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../theme/monad_theme.dart';
+
 class TrendChart extends StatelessWidget {
   final List<double?> values;
   final String title;
@@ -15,23 +17,23 @@ class TrendChart extends StatelessWidget {
     required this.values,
     required this.title,
     this.subtitle = '',
-    this.color = Colors.teal,
+    this.color = Monad.lakeBlue,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 0,
+      shape: Monad.softShape,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(title.toUpperCase(), style: Monad.monoCaption),
             if (subtitle.isNotEmpty) ...[
               const SizedBox(height: 4),
-              Text(subtitle, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+              Text(subtitle, style: Monad.monoBodySm),
             ],
             const SizedBox(height: 12),
             SizedBox(
@@ -58,7 +60,7 @@ class _SparklinePainter extends CustomPainter {
     final finite = values.whereType<double>().toList();
     if (finite.isEmpty || values.length < 2) {
       final p = Paint()
-        ..color = Colors.grey.shade300
+        ..color = Monad.ash
         ..strokeWidth = 2;
       canvas.drawLine(Offset(0, size.height / 2), Offset(size.width, size.height / 2), p);
       return;
@@ -92,3 +94,4 @@ class _SparklinePainter extends CustomPainter {
   bool shouldRepaint(covariant _SparklinePainter oldDelegate) =>
       oldDelegate.values != values || oldDelegate.color != color;
 }
+

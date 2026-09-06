@@ -24,11 +24,13 @@ def test_access_token_create_and_verify():
 
 def test_refresh_token_create_and_verify():
     data = {"sub": "12345"}
-    token = AuthService.create_refresh_token(data)
+    token, jti = AuthService.create_refresh_token(data)
     assert isinstance(token, str)
+    assert len(jti) == 32
     payload = AuthService.verify_token(token)
     assert payload is not None
     assert payload["sub"] == "12345"
+    assert payload["jti"] == jti  # single-use rotation id embeds in the token
 
 
 def test_invalid_token():

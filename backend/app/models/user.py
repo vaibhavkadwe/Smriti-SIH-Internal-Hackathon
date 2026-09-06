@@ -21,6 +21,8 @@ class User(Base):
     role = Column(SQLEnum(RoleEnum, values_callable=enum_values), nullable=False, default=RoleEnum.PATIENT)
     preferred_language = Column(String(20), nullable=False, default="english")
     is_active = Column(Boolean, nullable=False, default=True)
+    # JTI of the currently valid refresh token (single-use rotation).
+    refresh_jti = Column(String(64), nullable=True)
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 

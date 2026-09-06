@@ -443,4 +443,36 @@ class ApiService {
   Future<void> acknowledgeAlert(String alertId) async {
     await postJson('${AppConfig.apiV1}/dashboard/alerts/$alertId/acknowledge');
   }
+
+  // =====================================================================
+  // Caregiver schedule editing + DPDP audit (same endpoints as the web
+  // dashboard; server enforces roles/tiers — client only reflects them).
+  // =====================================================================
+
+  Future<void> createSchedule({
+    required String patientId,
+    required String reminderType, // medicine|water|food|exercise
+    required String cadence, // "08:00" | "daily@08:00,20:00"
+  }) async {
+    await postJson('${AppConfig.apiV1}/reminders/schedules',
+        body: {
+          'patient_id': patientId,
+          'reminder_type': reminderType,
+          'cadence': cadence,
+        });
+  }
+
+  Future<void> deleteSchedule(String scheduleId) async {
+    // Plain DELETE with auth; no body (matches web dashboard contract).
+    final res =
+        await _send('DELETE', '/reminders/schedules/$scheduleId');
+    if (res.statusCode >= 200 && res.statusCode < 300) return;
+    throw ApiException('HTTP ${res.statusCode}', statusCode: res.statusCode);
+  }
+  /// Read-only DPDP audit trail. Admin-only server-side; other roles get 403
+  /// which callers surface as "admin-only".
+  Future<List<Map<String, dynamic>>> auditLogs({int limit = 50}) async {
+    final data = await getJson('${AppConfig.apiV1}/compliance/audit-logs?limit=$limit');
+    return (data as List).cast<Map<String, dynamic>>();
+  }
 }

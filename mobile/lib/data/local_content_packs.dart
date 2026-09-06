@@ -77,11 +77,32 @@ class LocalContentPacks {
   };
 
   static MatchItBoard board(String packId, int difficultyLevel, String packName) {
-    final pairCount = difficultyLevel == 3 ? 9 : (difficultyLevel == 2 ? 6 : 4);
+    // Spec grids: L1 = 2x2 (2 pairs), L2 = 4x2 (4 pairs),
+    // L3 = 4x3 (6 pairs) built from VISUALLY RELATED pairs so "harder"
+    // is concrete (textiles vs textiles, instruments vs instruments).
+    final pairCount = difficultyLevel == 3 ? 6 : (difficultyLevel == 2 ? 4 : 2);
     final source = List<Map<String, String>>.from(
       _items[packId] ?? _items['festivals_ner']!,
     )..shuffle(_rng);
-    final selected = source.take(pairCount).toList();
+
+    List<Map<String, String>> selected;
+    if (difficultyLevel == 3) {
+      // Hard mode: prefer semantically related clusters first.
+      const relatedIds = [
+        'gamosa', 'mekhela', 'puan', 'naga_shawl', // textiles
+        'dhol', 'pepa', // instruments
+      ];
+      final related = source.where((i) => relatedIds.contains(i['id'])).toList();
+      related.shuffle(_rng);
+      selected = related.take(pairCount).toList();
+      if (selected.length < pairCount) {
+        final rest = source.where((i) => !relatedIds.contains(i['id'])).toList();
+        selected.addAll(rest.take(pairCount - selected.length));
+      }
+    } else {
+      selected = source.take(pairCount).toList();
+    }
+
     final cards = <MatchItCard>[];
     var n = 1;
     for (final item in selected) {
@@ -117,14 +138,15 @@ class LocalContentPacks {
       RoutineStep(stepId: 'bath', order: 5, time: '09:30', titleEn: 'Bathing', titleAs: 'গা ধোৱা', icon: 'shower'),
       RoutineStep(stepId: 'dress', order: 6, time: '09:45', titleEn: 'Dress in Traditional Attire', titleAs: 'পৰম্পৰাগত পোছাক', icon: 'checkroom'),
     ];
-    final count = difficultyLevel >= 2 ? 6 : 3;
+    // Spec: L1 = 3 steps, L2 = 4 steps, L3 = 5-6 steps with fewer hints.
+    final count = difficultyLevel == 1 ? 3 : (difficultyLevel == 2 ? 4 : steps.length);
     final chosen = steps.take(count).toList();
     final shuffled = List<RoutineStep>.from(chosen)..shuffle(_rng);
     return RoutineBoard(
       difficultyLevel: difficultyLevel,
       stepCount: chosen.length,
-      hasHints: difficultyLevel == 1,
-      hasIcons: difficultyLevel < 3,
+      hasHints: difficultyLevel <= 2, // L3: fewer free hints
+      hasIcons: true,
       shuffledItems: shuffled,
       correctSequence: chosen.map((s) => s.stepId).toList(),
     );

@@ -88,11 +88,12 @@ NER_CONTENT_PACKS: Dict[str, ContentPack] = {
     ),
 }
 
-# Difficulty levels to pair counts
+# Difficulty levels to pair counts (mirrors the client spec grids:
+# L1 = 2x2 (2 pairs), L2 = 4x2 (4 pairs), L3 = 4x3 (6 pairs))
 DIFFICULTY_PAIRS_MAP: Dict[int, int] = {
-    1: 4,  # 4 pairs = 8 cards (Easy: 2x4 grid)
-    2: 6,  # 6 pairs = 12 cards (Medium: 3x4 grid)
-    3: 9,  # 9 pairs = 18 cards (Hard: 3x6 grid)
+    1: 2,  # 2 pairs = 4 cards (Easy: 2x2 grid)
+    2: 4,  # 4 pairs = 8 cards (Medium: 4x2 grid)
+    3: 6,  # 6 pairs = 12 cards (Hard: 4x3 grid)
 }
 
 
@@ -143,7 +144,7 @@ def list_content_packs() -> List[Dict[str, Any]]:
 def generate_match_it_board(pack_id: str = "festivals_ner", difficulty_level: int = 1) -> Dict[str, Any]:
     """Generate a randomized match-it board configuration for a given pack and difficulty."""
     pack = NER_CONTENT_PACKS.get(pack_id) or NER_CONTENT_PACKS["festivals_ner"]
-    pair_count = DIFFICULTY_PAIRS_MAP.get(difficulty_level, 4)
+    pair_count = DIFFICULTY_PAIRS_MAP.get(difficulty_level, 2)
 
     # Pick N random distinct items from pack
     selected_items = random.sample(pack.items, min(pair_count, len(pack.items)))
