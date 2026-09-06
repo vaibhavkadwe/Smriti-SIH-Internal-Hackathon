@@ -60,3 +60,17 @@ backend/.pgdata/
 
 # Unrelated nested repo (student copy) — never tracked here
 SIH_Team_Maverick_Project/
+# Project-specific scratch (untracked)
+CLAUDE.md.zip
+/*.html
+verify_output.txt
+commit-phase*.sh
+setup.sh
+
+# Pytest subdir caches
+backend/.pytest_cache/
+
+# Graphify knowledge graph (local cache)
+graphify-out/cache/
+graphify-out/.graphify_*.json
+graphify-out/graph.html

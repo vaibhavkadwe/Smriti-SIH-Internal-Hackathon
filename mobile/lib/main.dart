@@ -425,39 +425,51 @@ class _PatientHome extends StatelessWidget {
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    // Warm parchment → periwinkle gradient wash — ground the feature card
+    // in the region's light without adding decorative clutter.
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 16),
       shape: Monad.cardShape,
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Monad.parchment,
-                  border: Border.all(color: Monad.ash),
-                  borderRadius: BorderRadius.circular(Monad.radiusMin),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Monad.parchment, Color(0xFFFFF7EC)], // warm cream shift
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Monad.parchment,
+                    border: Border.all(color: Monad.ash),
+                    borderRadius: BorderRadius.circular(Monad.radiusMin),
+                  ),
+                  child: Icon(icon, color: Monad.offBlack, size: 20),
                 ),
-                child: Icon(icon, color: Monad.offBlack, size: 20),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: Monad.subheading),
-                    const SizedBox(height: 8),
-                    Text(subtitle, style: Monad.monoBody),
-                  ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: Monad.subheading),
+                      const SizedBox(height: 8),
+                      Text(subtitle, style: Monad.monoBody),
+                    ],
+                  ),
                 ),
-              ),
-              Icon(Icons.chevron_right, color: Monad.graphite, size: 32),
-            ],
+                Icon(Icons.chevron_right, color: Monad.graphite, size: 32),
+              ],
+            ),
           ),
         ),
       ),

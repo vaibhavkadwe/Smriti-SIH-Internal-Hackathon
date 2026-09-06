@@ -353,6 +353,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                           ),
                         ),
                         _progressHeader(game),
+                        if (game.stepsPlaced == 0) _introBanner(),
                         Expanded(
                           child: game.isComplete
                               ? const SizedBox.shrink()
@@ -360,6 +361,46 @@ class _RoutineScreenState extends State<RoutineScreen> {
                         ),
                       ],
                     ),
+    );
+  }
+
+  Widget _introBanner() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFF8E8), Color(0xFFFFFBF0)],
+        ),
+        borderRadius: BorderRadius.circular(Monad.radiusMin),
+        border: Border.all(color: const Color(0xFFE8D8A0)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF0D8),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE8C880)),
+            ),
+            child: const Icon(Icons.lightbulb_outline, color: Color(0xFFD4A030), size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Arrange your day', style: Monad.monoLabel.copyWith(fontSize: 16)),
+                const SizedBox(height: 2),
+                Text('Tap activities in the order you do them each day', style: Monad.monoBodySm),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -399,7 +440,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
         ? game.board.correctSequence[game.stepsPlaced]
         : null;
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 16,

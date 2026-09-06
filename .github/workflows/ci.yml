@@ -75,8 +75,15 @@ jobs:
           flutter pub get
           dart run build_runner build --delete-conflicting-outputs
           flutter analyze
-      - name: Dashboard — deps + analyze
+          flutter test
+      - name: Dashboard — deps + analyze + test
         working-directory: dashboard
         run: |
           flutter pub get
           flutter analyze
+          flutter test
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks@v2
+        with:
+          config-path: .gitleaks.toml
+          args: detect --source . --verbose

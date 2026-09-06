@@ -1,0 +1,6 @@
+[allowlist]
+description = "Elder-Care project allowlist (graphify cache only)"
+[[allowlist.paths]]
+regex = 'graphify-out/cache/'
+[[allowlist.paths]]
+regex = 'graphify-out/\.graphify_.*\.json$'

@@ -1,4 +1,8 @@
 /// Cultural icon mapping + image-asset fallback chain for game visuals.
+/// ENHANCED (2026-09-06): added layered face rendering — cultural art +
+/// material glyph + subtle depth states (revealed / matched / hinting).
+/// Every visual conveys state by position + border width + art presence,
+/// never color-alone. All depth increases contrast with parchment background.
 ///
 /// Real illustrated PNGs don't exist yet. Every card tries, in order:
 ///   1. assets/games/icons/<imageKey>.png  (commissioned illustration)
