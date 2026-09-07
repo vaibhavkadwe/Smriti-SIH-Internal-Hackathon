@@ -128,12 +128,17 @@ class GameAnalyticsEngine {
   GameAnalyticsEngine._();
   static final GameAnalyticsEngine instance = GameAnalyticsEngine._();
 
-  // ---- Rule thresholds (also mirrored in backend difficulty_engine.py) ----
+  // ---- Rule thresholds ----
+  // Source of truth for level moves: backend difficulty_engine.py.
+  // Dart side uses the same numbers so in-app hints agree with server history.
+  // The bump-streak length lives on the server only (3 sessions); the client
+  // only mirrors per-session verdicts, not the streak.
   static const int stuckHintSeconds = 15;
-  static const double lowAccuracyPct = 40.0;
+  static const double lowAccuracyPct = 50.0;
   static const double highAccuracyPct = 85.0;
   static const double slowCompletionFactor = 1.5;
-  /// Two consecutive agreeing sessions before a level change.
+  /// Local hint window: in-app level-change banner needs 2 agreeing sessions.
+  /// Server difficulty_engine.py enforces its own bump-streak (3) independently.
   static const int sessionsBeforeChange = 2;
 
   /// Per-level target seconds to complete the game (used by the slow rule).
@@ -236,4 +241,19 @@ class GameAnalyticsEngine {
 
   /// Reset history (used by tests / caregiver override).
   void reset() => _lastAdjustments.clear();
+}
+
+/// Human-readable label for a [ReportTag] when shown in the patient UI.
+/// All caps per DESIGN.md tag pattern; renderer applies mono font.
+String reportTagLabel(ReportTag t) {
+  switch (t) {
+    case ReportTag.maintainLevel: return 'KEEPING GOING';
+    case ReportTag.raiseLevel:    return 'TRY HARDER';
+    case ReportTag.lowerLevel:    return 'EASIER NEXT';
+    case ReportTag.strongRecall:  return 'STRONG RECALL';
+    case ReportTag.needsSupport:  return 'NEEDS SUPPORT';
+    case ReportTag.attentionLag:  return 'TAKING TIME';
+    case ReportTag.routineStable: return 'STEADY ROUTINE';
+    case ReportTag.quickResponse: return 'QUICK THINKER';
+  }
 }

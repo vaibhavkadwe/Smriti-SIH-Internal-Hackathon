@@ -1,0 +1,122 @@
+
+STAGE 1 - ALZHEIMER'S RISK SCREENING MODEL
+BACKEND INTEGRATION GUIDE
+
+FILES PROVIDED:
+1. alzheimers_risk_model.keras
+2. scaler.pkl
+3. feature_names.json
+4. model_input_guide.json
+
+
+MODEL WORKFLOW:
+
+Flutter Application
+        |
+        v
+Patient Risk Screening Form
+        |
+        v
+Backend API
+        |
+        v
+Validate patient input
+        |
+        v
+Arrange features using feature_names.json
+        |
+        v
+Convert all values to numeric format
+        |
+        v
+Apply scaler.pkl
+        |
+        v
+Send scaled data to alzheimers_risk_model.keras
+        |
+        v
+Get risk probability (0 to 1)
+        |
+        v
+Return result to Flutter
+
+
+IMPORTANT RULES:
+
+1. ALL required features must be provided.
+
+2. Feature names and order must exactly match
+   feature_names.json.
+
+3. Use the SAME scaler.pkl provided with the model.
+   Do not train or create another scaler.
+
+4. Before prediction:
+
+   scaled_data = scaler.transform(patient_data)
+
+5. Model prediction returns a probability between 0 and 1.
+
+6. Input shape should be:
+
+   (1, number_of_features)
+
+7. The system is intended for preliminary risk screening
+   and decision support. It is NOT a medical diagnosis.
+
+
+STAGE 2 - ADAPTIVE COGNITIVE ENGINE
+
+The adaptive engine continuously monitors patient
+performance while playing cognitive games.
+
+INPUTS:
+
+- accuracy
+- reaction_time
+- memory_score
+- attention_score
+- recall_score
+- current_difficulty
+
+
+ADAPTIVE LOGIC:
+
+HIGH PERFORMANCE:
+Increase difficulty
+
+AVERAGE PERFORMANCE:
+Keep current difficulty
+
+LOW PERFORMANCE:
+Decrease difficulty
+
+
+DIFFICULTY LEVELS:
+
+Easy -> Medium -> Hard
+
+
+SYSTEM ARCHITECTURE:
+
+STAGE 1:
+Patient Information
+        |
+        v
+ANN Risk Screening Model
+        |
+        v
+Initial Risk Profile
+
+
+STAGE 2:
+Cognitive Games
+        |
+        v
+Performance Tracking
+        |
+        v
+Adaptive Difficulty Engine
+        |
+        v
+Personalized Difficulty

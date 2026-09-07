@@ -1,0 +1,249 @@
+{
+    "Age": {
+        "dtype": "int64",
+        "min": 60.0,
+        "max": 90.0,
+        "unique_values": "continuous_numeric"
+    },
+    "Gender": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 1.0,
+        "unique_values": [
+            0,
+            1
+        ]
+    },
+    "Ethnicity": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 3.0,
+        "unique_values": [
+            0,
+            1,
+            2,
+            3
+        ]
+    },
+    "EducationLevel": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 3.0,
+        "unique_values": [
+            0,
+            1,
+            2,
+            3
+        ]
+    },
+    "BMI": {
+        "dtype": "float64",
+        "min": 15.00885118163106,
+        "max": 39.99276746402374,
+        "unique_values": "continuous_numeric"
+    },
+    "Smoking": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 1.0,
+        "unique_values": [
+            0,
+            1
+        ]
+    },
+    "AlcoholConsumption": {
+        "dtype": "float64",
+        "min": 0.0020030991362718,
+        "max": 19.98929335906197,
+        "unique_values": "continuous_numeric"
+    },
+    "PhysicalActivity": {
+        "dtype": "float64",
+        "min": 0.003616016826019,
+        "max": 9.987429413422252,
+        "unique_values": "continuous_numeric"
+    },
+    "DietQuality": {
+        "dtype": "float64",
+        "min": 0.00938472011623,
+        "max": 9.99834567881401,
+        "unique_values": "continuous_numeric"
+    },
+    "SleepQuality": {
+        "dtype": "float64",
+        "min": 4.002628659826611,
+        "max": 9.99984031668144,
+        "unique_values": "continuous_numeric"
+    },
+    "FamilyHistoryAlzheimers": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 1.0,
+        "unique_values": [
+            0,
+            1
+        ]
+    },
+    "CardiovascularDisease": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 1.0,
+        "unique_values": [
+            0,
+            1
+        ]
+    },
+    "Diabetes": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 1.0,
+        "unique_values": [
+            0,
+            1
+        ]
+    },
+    "Depression": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 1.0,
+        "unique_values": [
+            0,
+            1
+        ]
+    },
+    "HeadInjury": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 1.0,
+        "unique_values": [
+            0,
+            1
+        ]
+    },
+    "Hypertension": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 1.0,
+        "unique_values": [
+            0,
+            1
+        ]
+    },
+    "SystolicBP": {
+        "dtype": "int64",
+        "min": 90.0,
+        "max": 179.0,
+        "unique_values": "continuous_numeric"
+    },
+    "DiastolicBP": {
+        "dtype": "int64",
+        "min": 60.0,
+        "max": 119.0,
+        "unique_values": "continuous_numeric"
+    },
+    "CholesterolTotal": {
+        "dtype": "float64",
+        "min": 150.09331559406317,
+        "max": 299.99335247432657,
+        "unique_values": "continuous_numeric"
+    },
+    "CholesterolLDL": {
+        "dtype": "float64",
+        "min": 50.23070655980742,
+        "max": 199.96566510142804,
+        "unique_values": "continuous_numeric"
+    },
+    "CholesterolHDL": {
+        "dtype": "float64",
+        "min": 20.00343401498445,
+        "max": 99.98032407804152,
+        "unique_values": "continuous_numeric"
+    },
+    "CholesterolTriglycerides": {
+        "dtype": "float64",
+        "min": 50.40719361978579,
+        "max": 399.9418615941332,
+        "unique_values": "continuous_numeric"
+    },
+    "MMSE": {
+        "dtype": "float64",
+        "min": 0.0053121464417005,
+        "max": 29.991380560529063,
+        "unique_values": "continuous_numeric"
+    },
+    "FunctionalAssessment": {
+        "dtype": "float64",
+        "min": 0.000459593595804,
+        "max": 9.996467072555015,
+        "unique_values": "continuous_numeric"
+    },
+    "MemoryComplaints": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 1.0,
+        "unique_values": [
+            0,
+            1
+        ]
+    },
+    "BehavioralProblems": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 1.0,
+        "unique_values": [
+            0,
+            1
+        ]
+    },
+    "ADL": {
+        "dtype": "float64",
+        "min": 0.0012879277024868,
+        "max": 9.99974712180168,
+        "unique_values": "continuous_numeric"
+    },
+    "Confusion": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 1.0,
+        "unique_values": [
+            0,
+            1
+        ]
+    },
+    "Disorientation": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 1.0,
+        "unique_values": [
+            0,
+            1
+        ]
+    },
+    "PersonalityChanges": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 1.0,
+        "unique_values": [
+            0,
+            1
+        ]
+    },
+    "DifficultyCompletingTasks": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 1.0,
+        "unique_values": [
+            0,
+            1
+        ]
+    },
+    "Forgetfulness": {
+        "dtype": "int64",
+        "min": 0.0,
+        "max": 1.0,
+        "unique_values": [
+            0,
+            1
+        ]
+    }
+}

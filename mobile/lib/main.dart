@@ -14,6 +14,8 @@ import 'screens/pack_picker_screen.dart';
 import 'screens/reminders_screen.dart';
 import 'screens/routine_screen.dart';
 import 'screens/voice_companion_screen.dart';
+import 'screens/clinical_notes_screen.dart';
+import 'screens/rag_upload_screen.dart';
 import 'services/api_service.dart';
 import 'services/auth_session.dart';
 import 'services/offline_sync_service.dart';
@@ -408,6 +410,17 @@ class _PatientHome extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => VoiceCompanionScreen(patientId: patientId),
+              ),
+            ),
+          ),
+          _homeButton(
+            context,
+            icon: Icons.upload_file,
+            title: 'Medical Documents',
+            subtitle: 'Upload prescription, report or doctor note',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => RagUploadScreen(patientId: patientId),
               ),
             ),
           ),

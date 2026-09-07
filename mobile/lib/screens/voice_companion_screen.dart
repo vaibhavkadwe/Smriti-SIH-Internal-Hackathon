@@ -31,6 +31,27 @@ class _VoiceCompanionScreenState extends State<VoiceCompanionScreen> {
     'bengali': 'বাংলা',
     'hindi': 'हिन्दी',
     'english': 'English',
+    'mizo': 'Mizo',
+    'meitei': 'Meitei (Manipuri)',
+    'khasi': 'Khasi',
+    'bodo': 'Bodo',
+    'garo': 'Garo',
+    'nepali': 'Nepali',
+  };
+
+  // Per-language input hint. Falls back to English if a language is added
+  // without a hint here.
+  static const Map<String, String> _hints = {
+    'assamese': 'বার্তা লিখক…',
+    'bengali': 'একটি বার্তা লিখুন…',
+    'hindi': 'एक संदेश लिखें…',
+    'english': 'Type a message…',
+    'mizo': 'Message emai…',
+    'meitei': 'Message ei chaba…',
+    'khasi': 'Nongsain ka jingiew…',
+    'bodo': 'Message jawabo…',
+    'garo': 'Message gnaty e…',
+    'nepali': 'Sandaitha…',
   };
 
   static const _greeting = 'নমস্কাৰ! মই আপোনাৰ লগত আছোঁ। আজি কেনে আছে?';
@@ -309,9 +330,7 @@ class _VoiceCompanionScreenState extends State<VoiceCompanionScreen> {
                 onSubmitted: _send,
                 style: Monad.monoLabel.copyWith(fontSize: 16),
                 decoration: InputDecoration(
-                  hintText: _selectedLanguage == 'assamese'
-                      ? 'বার্তা লিখুন…'
-                      : 'Type a message…',
+                  hintText: _hints[_selectedLanguage] ?? 'Type a message…',
                   hintStyle: Monad.monoBody.copyWith(color: Monad.smoke),
                   filled: true,
                   fillColor: Monad.parchment,

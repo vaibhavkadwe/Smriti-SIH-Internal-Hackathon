@@ -44,6 +44,8 @@
 /// assets/games/icons/naga_shawl.png  (Naga shawl textile)
 library;
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -56,13 +58,18 @@ class CulturalArtPainter extends CustomPainter {
   final Color color;
   CulturalArtPainter(this.key, {required this.color});
 
+  // Warm earthy palette — North-East cultural theme (matches DESIGN.md)
+  static const Color terracotta = Color(0xFFC0704A); // clay / NER earth
+  static const Color teaGreen    = Color(0xFF2D5A27); // tea-garden canopy
+  static const Color eriGold     = Color(0xFFC9A227); // Eri silk fiber
+
   @override
   void paint(Canvas canvas, Size size) {
     final p = Paint()..color = color..style = PaintingStyle.fill;
     final w = size.width, h = size.height, cx = w / 2, cy = h / 2;
     if (key == 'rhino') {
       // Rounded body + horn
-      canvas.drawRRect(Rect.fromLTWH(cx - 12, cy - 6, 24, 14), Radius.circular(6), p);
+      canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(cx - 12, cy - 6, 24, 14), const Radius.circular(6)), p);
       canvas.drawPath(Path()..moveTo(cx + 6, cy - 8)..lineTo(cx + 14, cy - 14)..lineTo(cx + 10, cy - 4)..close(), Paint()..color = terracotta..style = PaintingStyle.fill);
     } else if (key == 'assam_tea_leaf') {
       // Oval leaf + stem
@@ -73,18 +80,33 @@ class CulturalArtPainter extends CustomPainter {
       canvas.drawArc(Rect.fromLTWH(cx - 14, cy - 10, 28, 20), 0.2 * 3.14, 2.6 * 3.14, false, p);
     } else if (key == 'eri_silk') {
       // Folded rectangle + cross
-      canvas.drawRRect(Rect.fromLTWH(cx - 10, cy - 8, 20, 16), Radius.circular(4), p);
+      canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(cx - 10, cy - 8, 20, 16), const Radius.circular(4)), p);
       canvas.drawLine(Offset(cx - 6, cy - 2), Offset(cx + 6, cy + 2), Paint()..strokeWidth = 1.5..color = eriGold);
     } else if (key == 'dhol') {
       // Cylinder
-      canvas.drawRRect(Rect.fromLTWH(cx - 10, cy - 4, 20, 14), Radius.circular(6), p);
+      canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(cx - 10, cy - 4, 20, 14), const Radius.circular(6)), p);
       canvas.drawOval(Rect.fromLTWH(cx - 10, cy - 4, 20, 6), Paint()..color = terracotta..style = PaintingStyle.fill);
     } else if (key == 'bamboo_craft') {
       // 3 vertical bars
-      for (var i = -1; i <= 1; i++) canvas.drawRRect(Rect.fromLTWH(cx + i * 6 - 2, cy - 8, 4, 16), Radius.circular(2), p);
+      for (var i = -1; i <= 1; i++) canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(cx + i * 6 - 2, cy - 8, 4, 16), const Radius.circular(2)), p);
     } else if (key == 'naga_shawl') {
       // Diamond grid
       canvas.drawPath(Path()..moveTo(cx, cy - 10)..lineTo(cx + 10, cy)..lineTo(cx, cy + 10)..lineTo(cx - 10, cy)..close(), p);
+    } else if (key == 'bihu') {
+      canvas.drawCircle(Offset(cx, cy), 11, Paint()..color = terracotta..style = PaintingStyle.fill);
+    } else if (key == 'hornbill') {
+      canvas.drawCircle(Offset(cx, cy), 12, p);
+      for (var i = 0; i < 3; i++) {
+        final a = i * 2.09;
+        canvas.drawCircle(Offset(cx + 12 * cos(a), cy + 12 * sin(a)), 2, Paint()..color = teaGreen..style = PaintingStyle.fill);
+      }
+    } else if (key == 'chapchar_kut' || key == 'losar') {
+      // Mountain / hill arc (Mizo / Arunachal festivals)
+      canvas.drawArc(Rect.fromLTWH(cx - 14, cy - 8, 28, 16), 0.1 * 3.14, 2.8 * 3.14, false, p);
+    } else if (key == 'nongkrem' || key == 'wangala') {
+      // Drum / circular rhythm (Nongkrem dance / Wangala 100 drums)
+      canvas.drawCircle(Offset(cx, cy), 11, Paint()..color = eriGold..style = PaintingStyle.fill);
+      canvas.drawCircle(Offset(cx, cy), 5, Paint()..color = terracotta..style = PaintingStyle.fill);
     } else {
       // Generic star / flower fallback
       final pts = [Offset(cx, cy - 10), Offset(cx + 6, cy - 2), Offset(cx + 10, cy + 4), Offset(cx + 2, cy + 8), Offset(cx - 6, cy + 2)];
@@ -157,7 +179,8 @@ class GameVisuals {
     if (imageKey.contains('tea') || imageKey.contains('bamboo')) c = Monad.teaGreen;
     else if (imageKey.contains('silk') || imageKey.contains('eri')) c = Monad.eriGold;
     else if (imageKey.contains('rhino') || imageKey.contains('red_panda')) c = Color(0xFF8B6914);
-    else if (imageKey.contains('jaapi') || imageKey.contains('dhol') || imageKey.contains('bihu') || imageKey.contains('horn')) c = Monad.terracotta;
+    else if (imageKey.contains('jaapi') || imageKey.contains('dhol') || imageKey.contains('horn')) c = Monad.terracotta;
+    else if (imageKey.contains('bihu')) c = Monad.indigo;
     else if (imageKey.contains('shawl')) c = Monad.indigo;
     return CustomPaint(
       size: Size(iconSize, iconSize),

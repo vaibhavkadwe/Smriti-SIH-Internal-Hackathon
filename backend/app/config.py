@@ -36,7 +36,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # Multilingual
-    LANGUAGE_SET: List[str] = ["assamese", "bengali", "hindi", "english"]
+    LANGUAGE_SET: List[str] = [
+        "assamese", "bengali", "hindi", "english",
+        "mizo", "meitei", "khasi", "bodo", "garo", "nepali",
+    ]
     DEFAULT_LANGUAGE: str = "english"
 
     # Compliance

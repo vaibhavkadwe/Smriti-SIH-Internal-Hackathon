@@ -16,6 +16,7 @@ import '../services/auth_session.dart';
 import '../theme/monad_theme.dart';
 import '../widgets/dev_role_menu.dart';
 import '../widgets/trend_chart.dart';
+import 'clinical_notes_screen.dart';
 
 class CaregiverDashboardScreen extends StatefulWidget {
   final String caregiverId;
@@ -232,6 +233,22 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
                 ? () => _select(_selectedPatientId!)
                 : _fetchPatients,
           ),
+          // Clinical notes — ASHA workers and clinical staff; family sees it too
+          // (shared notes for home caregivers are legitimate). Hidden if no
+          // patient is selected yet.
+          if (_selectedPatientId != null)
+            IconButton(
+              tooltip: 'Add clinical note',
+              icon: const Icon(Icons.note_add_outlined),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        ClinicalNotesScreen(patientId: _selectedPatientId!),
+                  ),
+                );
+              },
+            ),
         ],
       ),
       body: _buildBody(),

@@ -16,11 +16,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'theme/monad_theme.dart';
 import 'widgets/risk_screening_card.dart';
+import 'widgets/risk_intake_form.dart';
+import 'widgets/rag_upload_widget.dart';
 
-const String _baseUrl = String.fromEnvironment(
-  'API_BASE_URL',
-  defaultValue: 'http://localhost:8000',
-);
+import 'config.dart';
+
+// =====================================================================
 
 // =====================================================================
 // Tiny typed client (self-contained; no shared package dependency)
@@ -800,6 +801,9 @@ class _DashboardScreenState extends State<_DashboardScreen> {
         ],
         // Reminder schedules (caregiver-editable)
         if (_schedules != null) _schedulesCard(),
+        const SizedBox(height: 12),
+        // RAG document upload — clinical view; feeds reports endpoint.
+        RagUploadWidget(patientId: _selectedPatientId ?? ''),
         const SizedBox(height: 8),
         // Alerts
         if (alerts.isNotEmpty) ...[
@@ -850,6 +854,20 @@ class _DashboardScreenState extends State<_DashboardScreen> {
         // Cognitive risk screening — clinical view only
         const SizedBox(height: 12),
         RiskScreeningCard(result: _riskScreeningResult),
+        const SizedBox(height: 8),
+        // Intake button — opens 32-field form; feeds endpoint; updates card.
+        FilledButton.icon(
+          icon: const Icon(Icons.medical_services, size: 18),
+          label: const Text('Run Screening (32 inputs)'),
+          onPressed: () => showDialog(
+            context: context,
+            builder: (_) => RiskIntakeForm(
+              patientId: _selectedPatientId ?? '',
+              patientName: '',
+              onResult: (r) => setState(() => _riskScreeningResult = r),
+            ),
+          ),
+        ),
       ],
     );
   }
