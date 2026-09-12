@@ -14,6 +14,7 @@ from app.models.user import User
 from app.services.language_service import (
     LanguageServiceProvider,
     LanguageServiceError,
+    UnsupportedLanguageError,
     get_language_service,
 )
 
@@ -42,6 +43,14 @@ def _get_provider() -> LanguageServiceProvider:
 
 
 def _handle(exc: LanguageServiceError) -> HTTPException:
+    if isinstance(exc, UnsupportedLanguageError):
+        # Language not covered by the active provider's models — a distinct
+        # code so clients render "not yet available" instead of an error.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=exc.message,
+            headers={"X-Unsupported-Language": exc.language},
+        )
     if exc.provider_status and 500 <= exc.provider_status < 600:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY, detail=exc.message

@@ -46,13 +46,34 @@ class Settings(BaseSettings):
     ENCRYPTION_KEY: str = "your-encryption-key-change-in-production"
 
     # --- Bhashini (speech: ASR / TTS / NMT) ---
-    # Provider selection: "auto" (use Bhashini when creds are present, else mock),
-    # "bhashini" (always real — errors when creds missing), "mock" (deterministic local).
+    # Provider selection: "auto" (ai4bharat -> bhashini -> mock by configured
+    # creds), "ai4bharat", "bhashini" (always real — errors when creds missing),
+    # "mock" (deterministic local).
     LANGUAGE_SERVICE_PROVIDER: str = "auto"
     BHASHINI_API_KEY: str = ""
     BHASHINI_USER_ID: str = ""
     # ULCA inference pipeline endpoint
     BHASHINI_ENDPOINT: str = "https://dhruva-api.bhashini.gov.in/services/inference/pipeline"
+
+    # --- AI4Bharat via Hugging Face Inference API (alternate ASR / TTS / NMT) ---
+    # Supported languages: assamese, bengali, bodo, manipuri, nepali, hindi,
+    # english. Khasi and Mizo are NOT supported by these models — requests
+    # raise UnsupportedLanguageError (surfaced as "not yet available" upstream).
+    #
+    # NOTE: the legacy api-inference.huggingface.co host was retired; the
+    # default points at the Inference Providers router. The AI4Bharat models
+    # are not currently served by the serverless platform — override this base
+    # with a dedicated Inference Endpoint URL to run them.
+    HUGGINGFACE_API_TOKEN: str = ""
+    HUGGINGFACE_INFERENCE_BASE: str = "https://router.huggingface.co/hf-inference"
+
+    # --- Sarvam AI (alternate ASR / TTS / NMT; 23-language translate coverage) ---
+    # translate: Sarvam-Translate model (full NER coverage incl. Assamese/Bodo/Manipuri).
+    # ASR (Saaras) and TTS (Bulbul) speech model language coverage is narrower —
+    # per-language support must be verified against the live API. Auth uses the
+    # `api-subscription-key` header (not Bearer).
+    SARVAM_API_KEY: str = ""
+    SARVAM_BASE_URL: str = "https://api.sarvam.ai"
 
     # --- LLM (voice companion + clinical answer synthesis) ---
     # Provider: auto | openrouter | anthropic. `auto` infers from the key prefix
