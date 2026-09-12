@@ -15,6 +15,11 @@ os.environ["CLAUDE_API_KEY"] = ""
 # fast + offline in CI. Semantic-provider behavior is covered by unit tests of
 # the provider registry with a stubbed backend.
 os.environ["EMBEDDING_PROVIDER"] = "heuristic"
+# Pin the language provider to mock: no test makes a live ASR/TTS/NMT call even
+# when a real HUGGINGFACE_API_TOKEN / BHASHINI creds exist in .env. The
+# ai4bharat/bhashini providers are covered by unit tests with a stubbed
+# (httpx.MockTransport) backend — same isolation pattern as the embedder/LLM.
+os.environ["LANGUAGE_SERVICE_PROVIDER"] = "mock"
 
 import asyncio
 import pytest

@@ -147,10 +147,12 @@ async def test_patient_profile_and_caregiver_link(client):
 @pytest.mark.asyncio
 async def test_phase8to10_routes_wired(client):
     """Phase 8-10 endpoints are mounted and auth-gated where required."""
-    # /language/status is public and reports the active (mock) provider
+    # /language/status is public and reports the active provider. Which one is
+    # active depends on the configured credentials (auto chain: ai4bharat ->
+    # bhashini -> mock), so assert the contract rather than a specific name.
     resp = await client.get("/api/v1/language/status")
     assert resp.status_code == 200, resp.text
-    assert resp.json()["provider"] == "mock"
+    assert resp.json()["provider"] in ("mock", "bhashini", "ai4bharat")
     assert "assamese" in resp.json()["supported_languages"]
 
     # Companion chat requires authentication

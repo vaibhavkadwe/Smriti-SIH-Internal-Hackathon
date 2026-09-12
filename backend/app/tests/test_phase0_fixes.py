@@ -108,20 +108,21 @@ async def test_language_endpoints_require_auth(client):
     # status stays public (mobile connectivity probe)
     assert (await client.get(f"{LANGUAGE}/status")).status_code == 200
 
-    # heavy endpoints (paid Bhashini proxy) reject anonymous callers
+    # heavy endpoints (paid Bhashini/HF proxy) reject anonymous callers
     for path, body in [
-        (f"{LANGUAGE}/asr", {"audio_base64": "x", "source_language": "assamese"}),
+        (f"{LANGUAGE}/asr", {"audio_base64": "eA==", "source_language": "assamese"}),
         (f"{LANGUAGE}/tts", {"text": "hi", "target_language": "assamese"}),
         (f"{LANGUAGE}/translate", {"text": "hi", "source_language": "assamese", "target_language": "english"}),
     ]:
         r = await client.post(path, json=body)
         assert r.status_code in (401, 403), f"{path} should require auth, got {r.status_code}"
 
-    # with a valid token, ASR works (mock provider)
+    # with a valid token, ASR works regardless of the active provider
+    # (valid base64 so the ai4bharat path decodes it; the mock ignores it)
     u = await _register(client, f"+91{uuid.uuid4().int % 10**10}")
     h = await _login(client, u["phone"])
     ok = await client.post(f"{LANGUAGE}/asr", headers=h,
-                           json={"audio_base64": "x", "source_language": "assamese"})
+                           json={"audio_base64": "eA==", "source_language": "assamese"})
     assert ok.status_code == 200, ok.text
 
 

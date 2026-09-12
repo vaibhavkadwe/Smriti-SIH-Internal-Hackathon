@@ -27,6 +27,8 @@ def _transport(handler) -> httpx.MockTransport:
 
 @pytest.mark.asyncio
 async def test_factory_auto_returns_mock_without_credentials(monkeypatch):
+    monkeypatch.setattr(settings, "SARVAM_API_KEY", "")
+    monkeypatch.setattr(settings, "HUGGINGFACE_API_TOKEN", "")
     monkeypatch.setattr(settings, "BHASHINI_API_KEY", "")
     monkeypatch.setattr(settings, "BHASHINI_USER_ID", "")
     service = get_language_service(provider="auto")
@@ -48,6 +50,9 @@ async def test_factory_bhashini_without_credentials_raises():
 
 @pytest.mark.asyncio
 async def test_factory_auto_uses_bhashini_when_configured(monkeypatch):
+    # No Sarvam key / HF token -> auto falls to Bhashini when its creds are set.
+    monkeypatch.setattr(settings, "SARVAM_API_KEY", "")
+    monkeypatch.setattr(settings, "HUGGINGFACE_API_TOKEN", "")
     monkeypatch.setattr(settings, "BHASHINI_API_KEY", "real-key")
     monkeypatch.setattr(settings, "BHASHINI_USER_ID", "uid-1")
     service = get_language_service(provider="auto")
