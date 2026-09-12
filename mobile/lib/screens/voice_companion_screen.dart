@@ -3,8 +3,10 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../config/app_config.dart';
 import '../services/api_service.dart';
 import '../theme/monad_theme.dart';
+import '../widgets/monad/monad_pill_button.dart';
 
 class VoiceCompanionScreen extends StatefulWidget {
   final String patientId;
@@ -25,6 +27,11 @@ class _VoiceCompanionScreenState extends State<VoiceCompanionScreen> {
   String _selectedLanguage = 'assamese';
   bool _sending = false;
   bool _wasFallback = false;
+
+  /// Languages the active backend provider actually covers (from
+  /// /language/status). Null while loading or when the call fails —
+  /// all ten picker entries stay enabled as before.
+  Set<String>? _providerLanguages;
 
   static const Map<String, String> _languages = {
     'assamese': 'অসমীয়া',
@@ -64,6 +71,30 @@ class _VoiceCompanionScreenState extends State<VoiceCompanionScreen> {
       isCompanion: true,
       timestamp: DateTime.now(),
     ));
+    _loadProviderLanguages();
+  }
+
+  Future<void> _loadProviderLanguages() async {
+    // The active provider may not cover every picker language (AI4Bharat
+    // models exclude Khasi + Mizo). The backend reports its supported set;
+    // uncovered languages show "not yet available" and are disabled rather
+    // than erroring at send time.
+    try {
+      final data = await _api
+          .getJson('${AppConfig.apiV1}/language/status');
+      final langs = (data['supported_languages'] as List?)
+              ?.map((e) => e.toString().toLowerCase())
+              .toSet();
+      if (mounted) setState(() => _providerLanguages = langs);
+    } on Exception {
+      // Offline or backend down — keep all languages enabled (mock covers all).
+      if (mounted) setState(() => _providerLanguages = null);
+    }
+  }
+
+  bool _languageAvailable(String code) {
+    final supported = _providerLanguages;
+    return supported == null || supported.contains(code);
   }
 
   @override
@@ -155,69 +186,76 @@ class _VoiceCompanionScreenState extends State<VoiceCompanionScreen> {
             ),
             onSelected: (v) => setState(() => _selectedLanguage = v),
             itemBuilder: (context) => _languages.entries
-                .map((e) => PopupMenuItem(
-                      value: e.key,
+                .map((e) {
+                  final available = _languageAvailable(e.key);
+                  return PopupMenuItem(
+                      value: available ? e.key : null,
+                      enabled: available,
                       child: Row(
                         children: [
                           if (e.key == _selectedLanguage)
                             const Icon(Icons.check, size: 16, color: Monad.lakeBlue),
                           if (e.key != _selectedLanguage) const SizedBox(width: 16),
                           const SizedBox(width: 8),
-                          Text(e.value, style: Monad.monoBody),
+                          Expanded(
+                            child: Text(
+                              available
+                                  ? e.value
+                                  : '${e.value} — not yet available',
+                              style: Monad.monoBody.copyWith(
+                                color: available
+                                    ? Monad.offBlack
+                                    : Monad.smoke,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                    ))
+                    );
+                })
                 .toList(),
           ),
           const SizedBox(width: 8),
         ],
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF0F6FF), Monad.parchment],
-            stops: [0.0, 0.35],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              if (_wasFallback)
-                _offlineBanner(),
-              Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  itemCount: _messages.length,
-                  itemBuilder: (context, index) => _messageBubble(_messages[index]),
-                ),
+      // Parchment canvas — no gradient washes on patient-facing chrome.
+      body: SafeArea(
+        child: Column(
+          children: [
+            if (_wasFallback)
+              _offlineBanner(),
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                itemCount: _messages.length + (_sending ? 1 : 0),
+                itemBuilder: (context, index) => index < _messages.length
+                    ? _messageBubble(_messages[index])
+                    : _typingBubble(),
               ),
-              _inputBar(),
-            ],
-          ),
+            ),
+            _inputBar(),
+          ],
         ),
       ),
     );
   }
 
   Widget _offlineBanner() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: const Color(0xFFFFF3E0),
-      child: Row(
-        children: [
-          const Icon(Icons.wifi_off, size: 14, color: Color(0xFFD4A030)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Offline mode — some responses are simplified.',
-              style: Monad.monoCaption.copyWith(color: const Color(0xFFD4A030)),
-            ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: ShapeDecoration(
+            color: Monad.tintGold,
+            shape: const StadiumBorder(side: BorderSide(color: Monad.ash, width: 1)),
           ),
-        ],
+          child: Text(
+            'OFFLINE MODE — RESPONSES SIMPLIFIED',
+            style: Monad.monoBodySm.copyWith(color: Monad.offBlack),
+          ),
+        ),
       ),
     );
   }
@@ -241,29 +279,19 @@ class _VoiceCompanionScreenState extends State<VoiceCompanionScreen> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isUser ? Monad.lakeBlue : Monad.white,
+                color: isUser ? Monad.parchment : Monad.periwinkleMist,
                 borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(20),
-                  topRight: const Radius.circular(20),
-                  bottomLeft: Radius.circular(isUser ? 20 : 4),
-                  bottomRight: Radius.circular(isUser ? 4 : 20),
+                  topLeft: const Radius.circular(16),
+                  topRight: const Radius.circular(16),
+                  bottomLeft: Radius.circular(isUser ? 16 : 4),
+                  bottomRight: Radius.circular(isUser ? 4 : 16),
                 ),
-                border: isUser
-                    ? null
-                    : Border.all(color: Monad.ash.withValues(alpha: 0.5)),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isUser ? Monad.lakeBlue : Colors.black).withValues(alpha: 0.06),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                border: Border.all(color: Monad.ash, width: 1),
               ),
               child: Text(
                 msg.content,
-                style: Monad.monoBody.copyWith(
-                  color: isUser ? Monad.white : Monad.offBlack,
-                  height: 1.35,
+                style: Monad.patientBody.copyWith(
+                  color: Monad.offBlack,
                 ),
               ),
             ),
@@ -277,25 +305,46 @@ class _VoiceCompanionScreenState extends State<VoiceCompanionScreen> {
     );
   }
 
-  Widget _companionAvatar() {
-    return Container(
-      width: 36, height: 36,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF6B9DFC), Monad.lakeBlue],
-        ),
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Monad.lakeBlue.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+  Widget _typingBubble() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          _companionAvatar(),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Monad.periwinkleMist,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                  bottomLeft: Radius.circular(4),
+                  bottomRight: Radius.circular(16),
+                ),
+                border: Border.all(color: Monad.ash, width: 1),
+              ),
+              child: Text('…', style: Monad.patientBody),
+            ),
           ),
         ],
       ),
-      child: const Icon(Icons.favorite, color: Monad.white, size: 18),
+    );
+  }
+
+  Widget _companionAvatar() {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: const BoxDecoration(
+        color: Monad.periwinkleMist,
+        shape: BoxShape.circle,
+        border: Border.fromBorderSide(BorderSide(color: Monad.ash, width: 1)),
+      ),
+      child: const Icon(Icons.favorite, color: Monad.offBlack, size: 18),
     );
   }
 
@@ -314,10 +363,9 @@ class _VoiceCompanionScreenState extends State<VoiceCompanionScreen> {
   Widget _inputBar() {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      decoration: BoxDecoration(
-        color: Monad.white,
-        border: Border(top: BorderSide(color: Monad.ash.withValues(alpha: 0.5))),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4, offset: const Offset(0, -2))],
+      decoration: const BoxDecoration(
+        color: Monad.parchment,
+        border: Border(top: BorderSide(color: Monad.ash, width: 1)),
       ),
       child: Row(
         children: [
@@ -328,15 +376,24 @@ class _VoiceCompanionScreenState extends State<VoiceCompanionScreen> {
                 controller: _messageController,
                 textInputAction: TextInputAction.send,
                 onSubmitted: _send,
-                style: Monad.monoLabel.copyWith(fontSize: 16),
+                // Patient-facing input floor: 20px.
+                style: Monad.patientBody,
                 decoration: InputDecoration(
                   hintText: _hints[_selectedLanguage] ?? 'Type a message…',
                   hintStyle: Monad.monoBody.copyWith(color: Monad.smoke),
                   filled: true,
                   fillColor: Monad.parchment,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(25),
-                    borderSide: BorderSide.none,
+                    borderRadius: BorderRadius.circular(Monad.radiusMin),
+                    borderSide: const BorderSide(color: Monad.ash, width: 1),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(Monad.radiusMin),
+                    borderSide: const BorderSide(color: Monad.ash, width: 1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(Monad.radiusMin),
+                    borderSide: const BorderSide(color: Monad.lakeBlue, width: 1),
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 ),
@@ -344,26 +401,11 @@ class _VoiceCompanionScreenState extends State<VoiceCompanionScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          Container(
-            width: 50, height: 50,
-            decoration: BoxDecoration(
-              color: Monad.lakeBlue,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Monad.lakeBlue.withValues(alpha: 0.4),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: IconButton(
-              onPressed: _sending ? null : () => _send(_messageController.text),
-              icon: _sending
-                  ? const SizedBox(width: 20, height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Monad.white))
-                  : const Icon(Icons.send, color: Monad.white, size: 22),
-            ),
+          MonadPillButton(
+            label: 'Send',
+            variant: MonadPillVariant.primary,
+            busy: _sending,
+            onPressed: () => _send(_messageController.text),
           ),
         ],
       ),
