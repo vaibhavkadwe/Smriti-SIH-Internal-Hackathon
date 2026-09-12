@@ -58,7 +58,8 @@ def main():
     tokens = {}
     patient_id = None
 
-    with httpx.Client(base_url=BASE, timeout=30) as c:
+    # 120s: free-tier LLM replies (companion chat) observed at ~50s+ live.
+    with httpx.Client(base_url=BASE, timeout=120) as c:
         check("GET /health", c.get("/health"), 200, "status")
 
         # ---------- auth: register three actors ----------
