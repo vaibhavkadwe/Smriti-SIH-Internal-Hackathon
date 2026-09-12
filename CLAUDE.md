@@ -211,7 +211,7 @@ item, currently 10 / 10 / 12 items). Default routine is an 11-step Assamese day
 ---
 
 ### 6. Multilingual MVP Scope
-**Decision:** Ship with Assamese, Bengali, Hindi, English (highest-coverage for NER)
+**Decision:** Ship with Assamese, Bengali, Hindi, English (highest-coverage for NER); companion picker additionally lists Mizo, Meitei (Manipuri), Khasi, Bodo, Garo, Nepali, provider-gated (unsupported entries show "not yet available" and are disabled).
 
 **Future Additions (Config-Only):**
 - Manipuri (Meitei), Khasi, Mizo, Nepali, Bodo added purely as Bhashini pipeline IDs
@@ -226,7 +226,7 @@ item, currently 10 / 10 / 12 items). Default routine is an 11-step Assamese day
 **Implementation:**
 - LANGUAGE_SET config lists supported codes
 - All API responses accept `?language=assamese` parameter
-- Mobile stores preferred_language per user (PatientProfile.preferred_language); companion chat has a 4-language picker (default Assamese)
+- Mobile stores preferred_language per user (PatientProfile.preferred_language); companion chat has a 10-language picker (default Assamese; entries the active provider does not cover show "not yet available" and are disabled)
 
 **Impact:** NER coverage from day 1; extensible without rework
 
@@ -375,7 +375,7 @@ mobile/lib/
 ├── services/                 # api_service, auth_session, offline_sync_service, reminder_service,
 │                             # reminder_scheduler, routine_service, match_it_service
 └── screens/                  # auth, match_it, pack_picker, routine, reminders,
-                              # voice_companion (text chat, 4 langs), caregiver_dashboard (role-gated)
+                              # voice_companion (text chat, 10-lang picker, provider-gated), caregiver_dashboard (role-gated)
 
 mobile/integration_test/app_flow_test.dart   # on-device flow (emulator + backend at 10.0.2.2:8000)
 mobile/android/app/src/debug/                # debug-only cleartext HTTP to 10.0.2.2 + localhost
