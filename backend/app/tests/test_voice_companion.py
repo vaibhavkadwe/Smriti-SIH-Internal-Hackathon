@@ -184,3 +184,34 @@ async def test_list_configs_returns_all(db_session):
     versions = {c.version for c in configs}
     assert versions == {"1.0.0", "2.0.0"}
     assert all(isinstance(c, VoiceCompanionConfig) for c in configs)
+
+
+@pytest.mark.asyncio
+async def test_persona_v1_2_0_content_and_activation(db_session):
+    config = await VoiceCompanionService.ensure_persona_v1_2_0(db_session)
+    assert config.version == "1.2.0"
+    assert config.persona_name == "Saathi"
+    assert config.is_active is True
+    assert "EMOTIONAL CHECK-IN" in config.system_prompt
+    assert "BOUNDARIES" in config.system_prompt
+    assert "never argue" in config.system_prompt
+    assert "inform your caregiver or doctor" in config.system_prompt
+    assert "SAME language the patient just used" in config.system_prompt
+    assert len(config.system_prompt) <= 5000
+    # activating the new row retires the seed default, never edits it
+    seed = await VoiceCompanionService.activate_config(db_session, "1.0.0")
+    assert seed is not None and seed.system_prompt != config.system_prompt
+    service = VoiceCompanionService(lang_service=MockLanguageService(), llm=LLMClient(api_key=""))
+    assert await service.get_system_prompt(db=db_session) == seed.system_prompt
+    # idempotent re-seed returns the same row, no duplicate
+    again = await VoiceCompanionService.ensure_persona_v1_2_0(db_session)
+    assert again.id == config.id
+
+
+@pytest.mark.asyncio
+async def test_persona_v1_2_0_duplicate_version_rejected(db_session):
+    await VoiceCompanionService.ensure_persona_v1_2_0(db_session)
+    with pytest.raises(ValueError):
+        await VoiceCompanionService.create_config(
+            db_session, version="1.2.0", system_prompt="dup", activate=True
+        )

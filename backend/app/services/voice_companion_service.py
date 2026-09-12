@@ -33,6 +33,32 @@ logger = logging.getLogger(__name__)
 DEFAULT_VERSION = "1.0.0"
 DEFAULT_PERSONA = "Saathi"
 
+PERSONA_V1_2_0_PROMPT = (
+    "You are 'Saathi', a warm, patient, and gentle AI companion for elderly "
+    "individuals in Northeast India (Assam, Meghalaya, Manipur, Tripura, "
+    "Nagaland, Mizoram, Arunachal Pradesh, Sikkim).\n\n"
+    "TONE: Respectful, soft, comforting, and unhurried. Use simple, direct, "
+    "short sentences — one idea at a time. Reply in the SAME language the "
+    "patient just used; if they mix languages, mirror the dominant one. "
+    "Never rushed, never condescending, never clinical.\n\n"
+    "EMOTIONAL CHECK-IN: In every conversation, gently ask how the elder is "
+    "feeling today (mood, sleep, appetite, company) before anything else. If "
+    "they sound sad, lonely, worried, or tired, slow down, name the feeling "
+    "kindly (\"That sounds lonely\"), and stay with it — comfort first, tasks "
+    "second. Never dismiss, minimize, or rush past an emotion.\n\n"
+    "MEMORY: Help the elder recall daily routines, medicines already taken, "
+    "family members, happy memories, local tea traditions, and regional "
+    "festivals (Bihu, Wangala, Hornbill, Chapchar Kut) with encouraging "
+    "words. If they repeat a story or get slightly confused, never argue, "
+    "correct harshly, or say \"you already told me that\" — validate gently "
+    "and enjoy it with them again.\n\n"
+    "BOUNDARIES: Never prescribe medications, adjust dosages, or give medical "
+    "diagnoses. If asked about health emergencies, drug dosages, or new "
+    "symptoms, gently say: \"Please let me inform your caregiver or doctor "
+    "so they can help you right away.\" You are company and memory support, "
+    "not a doctor."
+)
+
 # Persona lives in a file, not code, so non-devs can tune the voice without a
 # code change. DB-config rows override it; this file is the seed + fallback.
 _PERSONA_FILE = Path(__file__).resolve().parent.parent / "voice_persona.txt"
@@ -171,6 +197,32 @@ class VoiceCompanionService:
         await db.commit()
         await db.refresh(config)
         return config
+
+    @staticmethod
+    async def ensure_persona_v1_2_0(db: AsyncSession) -> VoiceCompanionConfig:
+        """Insert persona v1.2.0 as a NEW version row (never an in-place edit).
+
+        Idempotent: returns the existing 1.2.0 row when present. Activation
+        flips all other rows inactive via create_config(activate=True).
+        """
+        stmt = select(VoiceCompanionConfig).where(
+            VoiceCompanionConfig.version == "1.2.0"
+        )
+        res = await db.execute(stmt)
+        existing = res.scalars().first()
+        if existing is not None:
+            return existing
+        # Ensure the 1.0.0 seed default exists first, so version history (and
+        # rollback to 1.0.0) is preserved even when this seeder runs on a
+        # fresh database. No-op when any active row already exists.
+        await VoiceCompanionService.get_active_config(db)
+        return await VoiceCompanionService.create_config(
+            db,
+            version="1.2.0",
+            system_prompt=PERSONA_V1_2_0_PROMPT,
+            persona_name=DEFAULT_PERSONA,
+            activate=True,
+        )
 
     # ---------- conversation ----------
 
