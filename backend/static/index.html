@@ -60,17 +60,30 @@
          ==================================================================== -->
     <section id="landingView" class="landing-view">
 
-      <!-- HERO (80px serif 400, mono 20px graphite subtext, blue + ghost pills,
-           gradient atmospheric washes) -->
+      <!-- HERO — vernacular-first: Assamese leads, English follows, then the
+           nine supported languages in their own scripts. One wash (restraint). -->
       <div class="hero">
         <div class="wash wash-coral-sky" aria-hidden="true"></div>
-        <div class="wash wash-sky-mint" aria-hidden="true"></div>
         <div class="container hero-content">
-          <h1 class="hero-headline">Reviving memories,<br>restoring smiles.</h1>
-          <p class="hero-subtext">Adaptive cognitive games, a voice-guided multilingual companion, and caregiver monitoring — built for elderly dementia patients across the North Eastern Region, working even offline.</p>
+          <h1 class="hero-headline">
+            <span class="hero-vernacular t-display" lang="as">স্মৃতি আপোনাৰ ওচৰত</span>
+            <span class="hero-translation t-heading-lg">Memory care that speaks your language</span>
+          </h1>
+          <p class="hero-subtext">Cognitive games, a voice companion and daily reminders for elders across the North Eastern Region — in nine languages, with or without internet.</p>
           <div class="hero-actions">
             <button type="button" class="btn btn-blue" onclick="switchView('patient')">Open Patient View <span class="btn-arrow" aria-hidden="true">▸</span></button>
             <button type="button" class="btn btn-ghost" onclick="switchView('caregiver')">Caregiver Dashboard</button>
+          </div>
+          <div class="language-tags" role="list" aria-label="Supported languages">
+            <span class="tag" role="listitem" lang="as">অসমীয়া</span>
+            <span class="tag" role="listitem" lang="bn">বাংলা</span>
+            <span class="tag" role="listitem" lang="brx">बोडो</span>
+            <span class="tag" role="listitem" lang="kha">Khasi</span>
+            <span class="tag" role="listitem" lang="lus">Mizo</span>
+            <span class="tag" role="listitem" lang="mni">ꯃꯤꯇꯩ</span>
+            <span class="tag" role="listitem" lang="ne">नेपाली</span>
+            <span class="tag" role="listitem" lang="hi">हिन्दी</span>
+            <span class="tag" role="listitem" lang="en">English</span>
           </div>
         </div>
       </div>
@@ -114,7 +127,7 @@
             <div class="card feature-card">
               <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h4v4H7zM13 13h4v4h-4z"/></svg>
               <h3 class="feature-title">Cognitive Games</h3>
-              <p class="feature-body">Match-It memory cards themed with NER festivals, food, attire and animals. Daily Routine Sequencing doubles as early cognitive assessment. Difficulty scales with performance.</p>
+              <p class="feature-body">Match-It memory pairs themed on NER festivals, fruit, heritage and attire — two pairs at the gentlest level, six as confidence grows. Difficulty adapts to how each person plays.</p>
             </div>
 
             <div class="card feature-card">
@@ -126,13 +139,13 @@
             <div class="card feature-card">
               <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               <h3 class="feature-title">Voice Reminders</h3>
-              <p class="feature-body">Medicine, hydration, meals and exercise — voice-guided, local notifications that work fully offline and log compliance.</p>
+              <p class="feature-body">Medicine, hydration, meals and exercise — reminders fire on the device, work fully offline, and every acknowledgement logs to the caregiver dashboard.</p>
             </div>
 
             <div class="card feature-card span-2-col">
               <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               <h3 class="feature-title">Voice Companion</h3>
-              <p class="feature-body">A friendly conversational assistant guides patients through the app and checks in daily on emotional wellbeing — reducing reliance on reading and typing. Multilingual across nine NER languages with pre-recorded native-speaker audio for core prompts.</p>
+              <p class="feature-body">A friendly conversational assistant guides patients through the app and checks in daily on emotional wellbeing — reducing reliance on reading and typing. Conversations run in nine NER languages through Bhashini's government-backed speech models.</p>
             </div>
 
             <div class="card feature-card">
@@ -212,12 +225,12 @@
       <div class="section" style="padding-top: 0;">
         <div class="container">
           <div class="logo-strip" role="list" aria-label="Built on">
-            <span class="logo-wordmark" role="listitem">Bhashini</span>
-            <span class="logo-wordmark" role="listitem">MDoNER</span>
-            <span class="logo-wordmark" role="listitem">Google Cloud Speech</span>
-            <span class="logo-wordmark" role="listitem">Firebase</span>
-            <span class="logo-wordmark" role="listitem">SQLite · Drift</span>
-            <span class="logo-wordmark" role="listitem">SIH 2026</span>
+            <span class="logo-wordmark" role="listitem">Bhashini · ULCA</span>
+            <span class="logo-wordmark" role="listitem">OpenRouter</span>
+            <span class="logo-wordmark" role="listitem">PostgreSQL · pgvector</span>
+            <span class="logo-wordmark" role="listitem">FastAPI</span>
+            <span class="logo-wordmark" role="listitem">Flutter</span>
+            <span class="logo-wordmark" role="listitem">Drift · SQLite</span>
           </div>
         </div>
       </div>
@@ -552,10 +565,10 @@
   <footer class="site-footer">
     <div class="container">
       <div class="footer-cta">
-        <h2 class="t-serif t-heading">Smriti Reviving Memories, Restoring Smiles.</h2>
+        <h2 class="t-serif t-heading">Care begins with a conversation.</h2>
         <div class="hero-actions">
-          <button type="button" class="btn btn-blue" onclick="switchView('patient')">Open Patient View <span class="btn-arrow" aria-hidden="true">▸</span></button>
-          <button type="button" class="btn btn-ghost" onclick="switchView('caregiver')">Caregiver Dashboard</button>
+          <button type="button" class="btn btn-blue" onclick="switchView('caregiver')">Caregiver Dashboard <span class="btn-arrow" aria-hidden="true">▸</span></button>
+          <button type="button" class="btn btn-ghost" onclick="switchView('patient')">Open Patient View</button>
         </div>
       </div>
       <div class="footer-bottom">

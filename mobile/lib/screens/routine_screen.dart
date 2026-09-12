@@ -29,8 +29,7 @@ import '../theme/monad_theme.dart';
 
 /// Monad palette (DESIGN.md tokens).
 class _NERPalette {
-  static const headerBg = Monad.gold; // warm band
-  static const accent = Monad.lakeBlue; // single accent
+  static Color get headerBg => Monad.tintGold; // ≤25% gold tint, never full fill
   static const textDark = Monad.offBlack;
 }
 

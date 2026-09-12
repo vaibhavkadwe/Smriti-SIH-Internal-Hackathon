@@ -32,9 +32,8 @@ import '../theme/monad_theme.dart';
 /// Monad palette for the memory cards (DESIGN.md tokens).
 class _NERPalette {
   static const cardBack = Monad.parchment; // card resting on parchment
-  static const cardFace = Monad.parchment; // face reveals on parchment too
-  static const matchedBg = Monad.mint; // mint celebration fill
-  static const matchedBorder = Monad.mint;
+  static Color get matchedBg => Monad.tintMint; // ≤25% mint tint + icon + label
+  static Color get matchedBorder => Monad.ash;
   static const faceBorder = Monad.lakeBlue; // flipped = the blue accent moment
   static const faceText = Monad.offBlack;
 }

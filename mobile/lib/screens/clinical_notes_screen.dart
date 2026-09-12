@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import '../models/shared_models.dart';
 import '../services/api_service.dart';
 import '../theme/monad_theme.dart';
+import '../widgets/monad/monad_pill_button.dart';
 
 class ClinicalNotesScreen extends StatefulWidget {
   final String patientId;
@@ -79,9 +80,9 @@ class _ClinicalNotesScreenState extends State<ClinicalNotesScreen> {
         padding: const EdgeInsets.all(20),
         child: ListView(
           children: [
-            Text('Field visit observation', style: Monad.subheading.copyWith(fontSize: 20)),
+            Text('Field visit observation', style: Monad.subheading),
             const SizedBox(height: 8),
-            Text('ASHA worker — add clinical notes from today\'s visit.', style: Monad.monoCaption),
+            Text('ASHA worker — add clinical notes from today\'s visit.', style: Monad.monoBody),
             const SizedBox(height: 24),
             _label('Severity'),
             Row(children: [
@@ -110,17 +111,16 @@ class _ClinicalNotesScreenState extends State<ClinicalNotesScreen> {
               decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Detailed clinical observation'),
             ),
             const SizedBox(height: 20),
-            FilledButton.icon(
+            MonadPillButton(
+              label: _saving ? 'Saving…' : 'Save Notes',
               onPressed: _saving ? null : _save,
-              icon: _saving
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.save),
-              label: Text(_saving ? 'Saving…' : 'Save Notes'),
+              busy: _saving,
+              expanded: true,
             ),
             if (_result != null) ...[
               const SizedBox(height: 16),
               Text(_result!, style: Monad.monoBodySm.copyWith(
-                color: _result!.contains('successfully') || _result!.contains('Saved') ? Colors.green.shade700 : Monad.terracotta,
+                color: _result!.contains('successfully') || _result!.contains('Saved') ? Monad.teaGreen : Monad.crimson,
               )),
             ],
           ],

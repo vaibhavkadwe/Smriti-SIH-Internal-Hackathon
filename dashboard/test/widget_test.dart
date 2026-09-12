@@ -11,6 +11,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Caregiver Dashboard'), findsOneWidget);
-    expect(find.text('Sign In'), findsOneWidget);
+    // MonadPillButton uppercases + appends the ▸ primary-action glyph.
+    expect(find.text('SIGN IN ▸'), findsOneWidget);
   });
 }

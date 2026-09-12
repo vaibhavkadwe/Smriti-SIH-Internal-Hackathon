@@ -21,6 +21,7 @@ import 'services/auth_session.dart';
 import 'services/offline_sync_service.dart';
 import 'theme/monad_theme.dart';
 import 'widgets/dev_role_menu.dart';
+import 'widgets/monad/monad_pill_button.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -158,7 +159,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 if (_registering) ...[
                   TextFormField(
                     controller: _name,
-                    style: Monad.monoLabel,
+                    style: Monad.patientBody,
                     decoration: const InputDecoration(labelText: 'Your name'),
                     validator: (v) => (v == null || v.trim().isEmpty) ? 'Name is required' : null,
                   ),
@@ -167,7 +168,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 TextFormField(
                   controller: _phone,
                   keyboardType: TextInputType.phone,
-                  style: Monad.monoLabel,
+                  style: Monad.patientBody,
                   decoration: const InputDecoration(labelText: 'Phone number'),
                   validator: (v) => (v == null || v.trim().length < 6) ? 'Enter a valid phone number' : null,
                 ),
@@ -175,7 +176,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 TextFormField(
                   controller: _password,
                   obscureText: true,
-                  style: Monad.monoLabel,
+                  style: Monad.patientBody,
                   decoration: const InputDecoration(labelText: 'Password'),
                   validator: (v) => (v == null || v.length < 6) ? 'At least 6 characters' : null,
                 ),
@@ -185,11 +186,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       style: Monad.monoBodySm.copyWith(color: Monad.crimson)),
                 ],
                 const SizedBox(height: 22),
-                FilledButton(
-                  onPressed: _busy ? null : _submit,
-                  child: _busy
-                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Text(_registering ? 'Create Account' : 'Sign In'),
+                MonadPillButton(
+                  label: _registering ? 'Create Account' : 'Sign In',
+                  onPressed: _submit,
+                  busy: _busy,
                 ),
                 TextButton(
                   onPressed: _busy ? null : () => setState(() => _registering = !_registering),
@@ -330,13 +330,14 @@ class _ProfileSetupState extends State<_ProfileSetup> {
             const SizedBox(height: 20),
             TextField(
               controller: _name,
-              style: Monad.monoLabel,
+              style: Monad.patientBody,
               decoration: const InputDecoration(labelText: 'Your name'),
             ),
             const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _busy ? null : _create,
-              child: const Text('Continue'),
+            MonadPillButton(
+              label: 'Continue',
+              onPressed: _create,
+              busy: _busy,
             ),
           ],
         ),
@@ -440,49 +441,47 @@ class _PatientHome extends StatelessWidget {
   }) {
     // Warm parchment → periwinkle gradient wash — ground the feature card
     // in the region's light without adding decorative clutter.
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: Monad.cardShape,
+    // MonadFeatureCard: parchment, 1px ash, 40px radius, 40px padding,
+    // serif 24 title, patient-facing body at 20px floor. No shadow/gradient.
+    return Container(
+      margin: const EdgeInsets.only(bottom: Monad.spacing16),
+      decoration: BoxDecoration(
+        color: Monad.parchment,
+        border: Border.all(color: Monad.ash, width: 1),
+        borderRadius: BorderRadius.circular(Monad.radiusCard),
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Monad.parchment, Color(0xFFFFF7EC)], // warm cream shift
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Monad.parchment,
-                    border: Border.all(color: Monad.ash),
-                    borderRadius: BorderRadius.circular(Monad.radiusMin),
-                  ),
-                  child: Icon(icon, color: Monad.offBlack, size: 20),
+        borderRadius: BorderRadius.circular(Monad.radiusCard),
+        child: Padding(
+          padding: const EdgeInsets.all(Monad.cardPadding),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Monad.parchment,
+                  border: Border.all(color: Monad.ash, width: 1),
+                  borderRadius: BorderRadius.circular(Monad.radiusMin),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: Monad.subheading),
-                      const SizedBox(height: 8),
-                      Text(subtitle, style: Monad.monoBody),
-                    ],
-                  ),
+                child: Icon(icon, color: Monad.offBlack, size: 20),
+              ),
+              const SizedBox(width: Monad.spacing16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: Monad.subheading),
+                    const SizedBox(height: 8),
+                    Text(subtitle, style: Monad.patientBody),
+                  ],
                 ),
-                Icon(Icons.chevron_right, color: Monad.graphite, size: 32),
-              ],
-            ),
+              ),
+              const Icon(Icons.chevron_right,
+                  color: Monad.graphite, size: 32),
+            ],
           ),
         ),
       ),

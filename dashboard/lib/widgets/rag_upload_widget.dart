@@ -3,13 +3,10 @@
 /// Lazy: uses `package:http` MultipartRequest; no new dependency.
 library;
 
-import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import '../config.dart';
 import '../theme/monad_theme.dart';
-import '../../main.dart' show _Api, _baseUrl;
 
 class RagUploadWidget extends StatefulWidget {
   final String patientId;
@@ -35,38 +32,13 @@ class _RagUploadWidgetState extends State<RagUploadWidget> {
   Future<void> _pickOnWeb() async {
     setState(() { _uploading = true; _lastResult = null; });
     try {
-      // Build a hidden file input and click it.
-      final completer = Completer<dynamic>();
-      // ignore: unsafe_html
-      final html = '''
-        (function(){
-          var i = document.createElement('input');
-          i.type = 'file';
-          i.accept = 'application/pdf,text/plain';
-          i.onchange = function(e){
-            var file = e.target.files[0];
-            if(!file){ window._ragResult = null; return; }
-            var r = new FileReader();
-            r.onload = function(){ window._ragResult = { name: file.name, bytes: r.result, type: file.type }; };
-            r.readAsArrayBuffer(file);
-          };
-          document.body.appendChild(i); i.click(); i.remove();
-        })();
-      ''';
-      // The result is read by polling the JS side via dart:html — simpler: use
-      // package:http MultipartRequest from a base64 blob captured above. To
-      // keep this self-contained and dependency-free, defer to a direct call
-      // by the user — but the UI is wired so they can drop a file path.
-      // For this minimal version, the button shows a guidance snackbar:
-      completer.complete(null);
-
-      // Show a one-time dialog explaining how to upload (RAG endpoint exists,
-      // we keep UI button visible so user knows where it lives).
+      // The upload path needs a real file picker + multipart upload, which is
+      // not wired yet. Until then, show the exact curl command so a clinical
+      // user can upload documents while the UI path is pending.
       if (mounted) {
         setState(() {
           _lastResult =
-              'RAG endpoint: POST /api/v1/reports/documents/upload (patient_id, file). '
-              'Curl command provided below.';
+              'Upload via the API is pending. Curl command provided below.';
           _uploading = false;
         });
         showDialog(
@@ -74,7 +46,7 @@ class _RagUploadWidgetState extends State<RagUploadWidget> {
           builder: (_) => AlertDialog(
             title: const Text('Upload Document'),
             content: SelectableText(
-              'curl -X POST $_baseUrl/api/v1/reports/documents/upload \\\n'
+              'curl -X POST $apiBaseUrl/api/v1/reports/documents/upload \\\n'
               '  -H "Authorization: Bearer \$TOKEN" \\\n'
               '  -F "patient_id=${widget.patientId}" \\\n'
               '  -F "doc_type=prescription" \\\n'

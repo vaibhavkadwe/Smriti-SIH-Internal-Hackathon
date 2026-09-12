@@ -7,6 +7,7 @@ import '../models/shared_models.dart';
 import '../services/reminder_scheduler.dart';
 import '../services/reminder_service.dart';
 import '../theme/monad_theme.dart';
+import '../widgets/monad/monad_pill_button.dart';
 
 class RemindersScreen extends StatefulWidget {
   final String patientId;
@@ -87,16 +88,18 @@ class _RemindersScreenState extends State<RemindersScreen> {
 
   // ---- Design helpers ----
 
-  static LinearGradient _gradientFor(ReminderType type) {
+  /// Reminder tint surface: fixed mapping, icon + label + tint together.
+  /// medicine = lakeBlue, water = skyBlue, food = gold, exercise = mint.
+  static Color _tintFor(ReminderType type) {
     switch (type) {
       case ReminderType.medicine:
-        return const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFE8EEFF), Color(0xFFF3F6FF)]);
+        return Color.lerp(Monad.parchment, Monad.lakeBlue, 0.12)!;
       case ReminderType.water:
-        return const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFE0EDFF), Color(0xFFF0F7FF)]);
+        return Monad.tintSky;
       case ReminderType.food:
-        return const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFFFF3E0), Color(0xFFFFFBF5)]);
+        return Monad.tintGold;
       case ReminderType.exercise:
-        return const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFE8FFF0), Color(0xFFF4FFFB)]);
+        return Monad.tintMint;
     }
   }
 
@@ -106,15 +109,6 @@ class _RemindersScreenState extends State<RemindersScreen> {
       case ReminderType.water: return Icons.water_drop;
       case ReminderType.food: return Icons.restaurant;
       case ReminderType.exercise: return Icons.directions_walk;
-    }
-  }
-
-  static Color _accentFor(ReminderType type) {
-    switch (type) {
-      case ReminderType.medicine: return Monad.lakeBlue;
-      case ReminderType.water: return Monad.skyBlue;
-      case ReminderType.food: return const Color(0xFFD4A030);
-      case ReminderType.exercise: return const Color(0xFF3CB371);
     }
   }
 
@@ -139,22 +133,14 @@ class _RemindersScreenState extends State<RemindersScreen> {
   Widget _buildSectionHeader(String title, {String? subtitle}) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 24, 4, 12),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(width: 3, height: 24, decoration: BoxDecoration(
-            color: Monad.lakeBlue, borderRadius: BorderRadius.circular(2))),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: Monad.subheading.copyWith(fontSize: 22)),
-              if (subtitle != null) ...[
-                const SizedBox(height: 2),
-                Text(subtitle, style: Monad.monoCaption),
-              ],
-            ],
-          ),
-          const Spacer(),
+          Text(title, style: Monad.subheading),
+          if (subtitle != null) ...[
+            const SizedBox(height: 2),
+            Text(subtitle, style: Monad.monoBody),
+          ],
         ],
       ),
     );
@@ -163,46 +149,39 @@ class _RemindersScreenState extends State<RemindersScreen> {
   Widget _buildCard(ReminderScheduleModel schedule) {
     final done = _justAcked.contains(schedule.id);
     final hasOpenEvent = _openEventBySchedule.containsKey(schedule.id);
-    final accent = _accentFor(schedule.reminderType);
-    final gradient = _gradientFor(schedule.reminderType);
+    // Tinted illustration surface only; icon + label + tint together.
+    final surface = done ? Monad.tintMint : _tintFor(schedule.reminderType);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: Monad.spacing16),
       decoration: BoxDecoration(
-        color: done ? const Color(0xFFF8FFF8) : null,
-        gradient: done ? null : gradient,
+        color: surface,
         borderRadius: BorderRadius.circular(Monad.radiusCard),
-        border: Border.all(
-          color: done ? const Color(0xFFD0EED0) : Monad.ash.withValues(alpha: 0.6),
-          width: 1,
-        ),
-        boxShadow: Monad.cardShadow,
+        border: Border.all(color: Monad.ash, width: 1),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           // Main row
           Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(Monad.cardPadding),
             child: Row(
               children: [
                 // Icon container
                 Container(
-                  width: 64, height: 64,
+                  width: 64,
+                  height: 64,
                   decoration: BoxDecoration(
-                    color: done ? const Color(0xFFE8F5E8) : Monad.parchment,
-                    borderRadius: BorderRadius.circular(Monad.radiusMin),
-                    border: Border.all(
-                      color: done ? const Color(0xFFB8D8B8) : accent.withValues(alpha: 0.4),
-                      width: done ? 1 : 1.5,
-                    ),
-                    boxShadow: done ? null : [
-                      BoxShadow(color: accent.withValues(alpha: 0.12), blurRadius: 8, offset: const Offset(0, 2)),
-                    ],
+                    color: Monad.parchment,
+                    borderRadius:
+                        BorderRadius.circular(Monad.radiusMin),
+                    border: Border.all(color: Monad.ash, width: 1),
                   ),
                   child: Icon(
-                    done ? Icons.check_rounded : _iconFor(schedule.reminderType),
-                    color: done ? const Color(0xFF4CAF50) : accent,
+                    done
+                        ? Icons.check_rounded
+                        : _iconFor(schedule.reminderType),
+                    color: Monad.offBlack,
                     size: 30,
                   ),
                 ),
@@ -212,47 +191,45 @@ class _RemindersScreenState extends State<RemindersScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Type pill + assamese
+                      // Type pill + assamese (icon + label + tint together)
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: accent.withValues(alpha: done ? 0.1 : 0.15),
-                              borderRadius: BorderRadius.circular(Monad.radiusPill),
-                              border: Border.all(color: accent.withValues(alpha: 0.3)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
+                            decoration: const ShapeDecoration(
+                              color: Monad.parchment,
+                              shape: StadiumBorder(
+                                  side: BorderSide(
+                                      color: Monad.ash, width: 1)),
                             ),
                             child: Text(
                               schedule.reminderType.name.toUpperCase(),
-                              style: Monad.monoCaption.copyWith(
-                                color: done ? const Color(0xFF4CAF50) : accent,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: Monad.monoBodySm.copyWith(
+                                  color: Monad.offBlack,
+                                  fontWeight: FontWeight.w500),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Text(
                             _assameseFor(schedule.reminderType),
-                            style: Monad.monoCaption.copyWith(
-                              color: done ? const Color(0xFF4CAF50) : accent,
-                            ),
+                            style: Monad.monoCaption
+                                .copyWith(color: Monad.offBlack),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        done ? '✓ Done today' : _descriptionFor(schedule.reminderType),
-                        style: Monad.monoLabel.copyWith(
-                          color: done ? const Color(0xFF4CAF50) : Monad.offBlack,
-                          fontSize: 17,
-                        ),
+                        done
+                            ? '✓ Done today'
+                            : _descriptionFor(schedule.reminderType),
+                        style: Monad.patientBody,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         done ? '' : schedule.cadence,
-                        style: Monad.monoBody.copyWith(
-                          color: done ? const Color(0xFF4CAF50) : Monad.smoke,
-                        ),
+                        style: Monad.monoBody
+                            .copyWith(color: Monad.graphite),
                       ),
                     ],
                   ),
@@ -260,34 +237,43 @@ class _RemindersScreenState extends State<RemindersScreen> {
               ],
             ),
           ),
-          // Action button
+          // Action button — secondary (offBlack) pill; the screen's single
+          // lakeBlue primary is reserved, so repeated row actions stay black.
           if (!done)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: SizedBox(
-                height: 56,
+                height: 48,
                 child: ElevatedButton.icon(
-                  onPressed: !hasOpenEvent ? null : () => _handleAcknowledge(schedule),
+                  onPressed:
+                      !hasOpenEvent ? null : () => _handleAcknowledge(schedule),
                   icon: Icon(
                     hasOpenEvent ? Icons.check_circle : Icons.access_time,
                     size: 24,
-                    color: Monad.white,
                   ),
                   label: Text(
                     hasOpenEvent ? 'I Did This  কৰিলোঁ' : 'Not Due Now',
-                    style: Monad.monoLabel.copyWith(color: Monad.white, fontSize: 17),
+                    style: Monad.monoButtonLabel.copyWith(fontSize: 20),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accent,
-                    foregroundColor: Monad.white,
-                    disabledBackgroundColor: Monad.parchment,
-                    disabledForegroundColor: Monad.smoke,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(Monad.radiusMin),
+                  // Secondary (offBlack) pill — the screen keeps lakeBlue
+                  // reserved; repeated row actions stay black per DESIGN.md.
+                  style: Monad.blackPill().copyWith(
+                    backgroundColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.disabled)
+                          ? Monad.parchment
+                          : Monad.offBlack,
                     ),
-                    elevation: hasOpenEvent ? 2 : 0,
-                    shadowColor: accent.withValues(alpha: 0.4),
+                    foregroundColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.disabled)
+                          ? Monad.smoke
+                          : Monad.white,
+                    ),
+                    side: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.disabled)
+                          ? const BorderSide(color: Monad.ash, width: 1)
+                          : BorderSide.none,
+                    ),
                   ),
                 ),
               ),
@@ -297,21 +283,21 @@ class _RemindersScreenState extends State<RemindersScreen> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Container(
-                height: 56,
+                height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E8),
-                  borderRadius: BorderRadius.circular(Monad.radiusMin),
-                  border: Border.all(color: const Color(0xFFD0EED0)),
+                  color: Monad.parchment,
+                  borderRadius:
+                      BorderRadius.circular(Monad.radiusButton),
+                  border: Border.all(color: Monad.ash, width: 1),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 24),
+                    const Icon(Icons.check_circle,
+                        color: Monad.offBlack, size: 24),
                     const SizedBox(width: 10),
-                    Text(
-                      'Well done! — ধন্যবাদ',
-                      style: Monad.monoLabel.copyWith(color: const Color(0xFF4CAF50), fontSize: 17),
-                    ),
+                    Text('Well done! — ধন্যবাদ',
+                        style: Monad.patientBody),
                   ],
                 ),
               ),
@@ -362,16 +348,17 @@ class _RemindersScreenState extends State<RemindersScreen> {
             Container(
               width: 80, height: 80,
               decoration: BoxDecoration(
-                color: Monad.periwinkleMist,
-                borderRadius: BorderRadius.circular(24),
+                color: Monad.parchment,
+                borderRadius: BorderRadius.circular(Monad.radiusMin + 8),
+                border: Border.all(color: Monad.ash, width: 1),
               ),
               child: Icon(icon, size: 40, color: Monad.smoke),
             ),
             const SizedBox(height: 20),
-            Text(text, textAlign: TextAlign.center, style: Monad.monoBodyLg),
+            Text(text, textAlign: TextAlign.center, style: Monad.patientBody),
             if (retry != null) ...[
               const SizedBox(height: 20),
-              FilledButton(onPressed: retry, child: const Text('Try Again')),
+              MonadPillButton(label: 'Try Again', onPressed: retry),
             ],
           ],
         ),

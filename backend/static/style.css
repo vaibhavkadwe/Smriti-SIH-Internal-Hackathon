@@ -611,6 +611,37 @@ input.form-control {
   line-height: var(--leading-display);
   letter-spacing: var(--tracking-display);
   color: var(--color-off-black);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-24);
+}
+
+/* Assamese vernacular line — the hero's one bold gesture.
+   Sizing comes from .t-display (incl. its mobile breakpoint); this class
+   only neutralises the negative Latin tracking that harms Indic scripts. */
+.hero-vernacular {
+  letter-spacing: -0.01em;
+}
+
+/* English translation beneath — sized by .t-heading-lg, recolored quieter */
+.hero-translation {
+  color: var(--color-graphite);
+}
+
+/* Nine-language pill row under the CTAs */
+.language-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--spacing-8);
+  max-width: 720px;
+}
+
+.language-tags .tag {
+  padding: 8px 16px;
+  font-size: var(--text-body-sm);
+  text-transform: none; /* native scripts must not be uppercased */
 }
 
 .hero-subtext {

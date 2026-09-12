@@ -7,6 +7,7 @@ import '../data/local_content_packs.dart';
 import '../models/shared_models.dart';
 import '../services/api_service.dart';
 import '../theme/monad_theme.dart';
+import '../widgets/monad/monad_pill_button.dart';
 import 'match_it_screen.dart';
 
 class PackPickerScreen extends StatefulWidget {
@@ -77,9 +78,9 @@ class _PackPickerScreenState extends State<PackPickerScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(_error!, textAlign: TextAlign.center, style: Monad.monoBodyLg),
+                      Text(_error!, textAlign: TextAlign.center, style: Monad.patientBody),
                       const SizedBox(height: 16),
-                      ElevatedButton(onPressed: _load, child: const Text('Retry')),
+                      MonadPillButton(label: 'Retry', onPressed: _load),
                     ],
                   ),
                 )
@@ -121,8 +122,10 @@ class _PackPickerScreenState extends State<PackPickerScreen> {
                               ),
                               title: Text(pack.name, style: Monad.subheading),
                               subtitle: Text(
-                                '${pack.region} • ${pack.itemCount} items\n${pack.description}',
-                                style: Monad.monoBodySm,
+                                '${pack.region} · ${pack.itemCount} items\n${pack.description}',
+                                // Patient-facing: 20px floor (region/item-count
+                                // line + description).
+                                style: Monad.patientBody,
                               ),
                               isThreeLine: true,
                               trailing: Icon(Icons.chevron_right, size: 36, color: Monad.graphite),

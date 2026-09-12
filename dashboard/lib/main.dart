@@ -17,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'theme/monad_theme.dart';
 import 'widgets/risk_screening_card.dart';
 import 'widgets/risk_intake_form.dart';
+import 'widgets/monad/monad_pill_button.dart';
 import 'widgets/rag_upload_widget.dart';
 
 import 'config.dart';
@@ -77,12 +78,12 @@ class _Api {
 
   static Future<dynamic> _post(String path,
       {Map<String, dynamic>? body, bool auth = true}) async {
-    return _withRefresh(auth, () => http.post(Uri.parse('$_baseUrl$path'),
+    return _withRefresh(auth, () => http.post(Uri.parse('$apiBaseUrl$path'),
         headers: _headers(), body: jsonEncode(body ?? const {})));
   }
 
   static Future<dynamic> _get(String path, {bool auth = true}) async {
-    return _withRefresh(auth, () => http.get(Uri.parse('$_baseUrl$path'), headers: _headers()));
+    return _withRefresh(auth, () => http.get(Uri.parse('$apiBaseUrl$path'), headers: _headers()));
   }
 
   /// Run a request; on 401 (expired access token) refresh once and retry.
@@ -96,7 +97,7 @@ class _Api {
   }
 
   static Future<http.Response> _delete(String path) =>
-      http.delete(Uri.parse('$_baseUrl$path'), headers: _headers());
+      http.delete(Uri.parse('$apiBaseUrl$path'), headers: _headers());
 
   static dynamic _decode(http.Response res) {
     final data = res.body.isEmpty ? null : jsonDecode(res.body);
@@ -112,7 +113,7 @@ class _Api {
     if (_refreshToken == null) return false;
     try {
       final res = await http.post(
-        Uri.parse('$_baseUrl/api/v1/auth/refresh'),
+        Uri.parse('$apiBaseUrl/api/v1/auth/refresh'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'refresh_token': _refreshToken}),
       );
@@ -443,14 +444,10 @@ class _LoginScreenState extends State<_LoginScreen> {
                       style: Monad.monoBodySm.copyWith(color: Monad.crimson)),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _busy ? null : _signIn,
-                  child: _busy
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Sign In'),
+                MonadPillButton(
+                  label: 'Sign In',
+                  onPressed: _signIn,
+                  busy: _busy,
                 ),
               ],
             ),
@@ -635,7 +632,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
             children: [
               Text(_error!, style: const TextStyle(fontSize: 17)),
               const SizedBox(height: 16),
-              FilledButton(onPressed: _load, child: const Text('Retry')),
+              MonadPillButton(label: 'Retry', onPressed: _load),
             ],
           ),
         ),
@@ -722,24 +719,24 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (!isClinical) ...[
-          Card(
-            elevation: 0,
-            color: Monad.gold.withValues(alpha: 0.35),
-            shape: Monad.softShape,
-            child: const Padding(
-              padding: EdgeInsets.all(14),
-              child: Row(children: [
-                Icon(Icons.lock_outline, size: 22, color: Monad.graphite),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Basic view — clinical detail (accuracy, trends, flags) is '
-                    'visible to linked clinical staff only.',
-                    style: Monad.monoBodySm,
-                  ),
-                ),
-              ]),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Monad.tintGold,
+              borderRadius: BorderRadius.circular(Monad.radiusMin),
+              border: Border.all(color: Monad.ash, width: 1),
             ),
+            child: const Row(children: [
+              Icon(Icons.lock_outline, size: 22, color: Monad.graphite),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Basic view — clinical detail (accuracy, trends, flags) is '
+                  'visible to linked clinical staff only.',
+                  style: Monad.monoBodySm,
+                ),
+              ),
+            ]),
           ),
           const SizedBox(height: 12),
         ],
@@ -813,8 +810,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
             Card(
               elevation: 0,
               color: (a['severity'] == 'critical' || a['severity'] == 'warning')
-                  ? Monad.coral.withValues(alpha: 0.18)
-                  : Monad.gold.withValues(alpha: 0.35),
+                  ? Monad.tintCoral
+                  : Monad.tintGold,
               shape: Monad.softShape,
               child: ListTile(
                 leading: Icon(Icons.warning_amber_rounded,

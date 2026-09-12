@@ -15,6 +15,7 @@ import '../services/api_service.dart';
 import '../services/auth_session.dart';
 import '../theme/monad_theme.dart';
 import '../widgets/dev_role_menu.dart';
+import '../widgets/monad/monad_pill_button.dart';
 import '../widgets/trend_chart.dart';
 import 'clinical_notes_screen.dart';
 
@@ -174,9 +175,10 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
                     labelText: 'Time (HH:MM, comma-separated)'),
               ),
               const SizedBox(height: 16),
-              FilledButton(
+              MonadPillButton(
+                label: 'Save',
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Save'),
+                expanded: true,
               ),
             ],
           ),
@@ -262,7 +264,7 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
         if (notice != null)
           Container(
             width: double.infinity,
-            color: Monad.gold,
+            color: Monad.tintGold,
             padding: const EdgeInsets.all(12),
             child: Text(notice, style: Monad.monoBodySm.copyWith(color: Monad.offBlack)),
           ),
@@ -284,7 +286,7 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
               const SizedBox(height: 12),
               Text(_error!, textAlign: TextAlign.center, style: Monad.monoBodyLg),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: _fetchPatients, child: const Text('Retry')),
+              MonadPillButton(label: 'Retry', onPressed: _fetchPatients),
             ],
           ),
         ),
@@ -408,10 +410,12 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
                 critical ? Monad.tintCoral : Monad.tintGold;
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
+              // Alert card: tint fill + 1px ash hairline, no shadow
+              // (only game faces + status chips get elevation).
               decoration: BoxDecoration(
                 color: tint,
                 borderRadius: BorderRadius.circular(Monad.radiusCard),
-                boxShadow: Monad.cardShadow,
+                border: Border.all(color: Monad.ash, width: 1),
               ),
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -431,9 +435,10 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
                   Text('Type: ${map['trigger_type']}',
                       style: Monad.monoBodySm),
                   const SizedBox(height: 12),
-                  ElevatedButton(
+                  MonadPillButton(
+                    label: 'Resolve',
+                    variant: MonadPillVariant.secondary,
                     onPressed: () => _acknowledge(map['id'] as String),
-                    child: const Text('Resolve'),
                   ),
                 ],
               ),
@@ -447,7 +452,6 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
             decoration: BoxDecoration(
               color: Monad.periwinkleMist,
               borderRadius: BorderRadius.circular(Monad.radiusCard),
-              boxShadow: Monad.cardShadow,
             ),
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -513,24 +517,24 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
     final trends = (summary['daily_trends'] as List? ?? const [])
         .cast<Map<String, dynamic>>();
     if (trends.isEmpty) {
-      return Card(
-        elevation: 0,
-        color: Monad.gold.withValues(alpha: 0.35),
-        shape: Monad.softShape,
-        child: const Padding(
-          padding: EdgeInsets.all(14),
-          child: Row(children: [
-            Icon(Icons.lock_outline, size: 22, color: Monad.graphite),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Basic view — accuracy and response-time trends are visible '
-                'to linked clinical staff only.',
-                style: Monad.monoBodySm,
-              ),
-            ),
-          ]),
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Monad.tintGold,
+          borderRadius: BorderRadius.circular(Monad.radiusMin),
+          border: Border.all(color: Monad.ash, width: 1),
         ),
+        child: const Row(children: [
+          Icon(Icons.lock_outline, size: 22, color: Monad.graphite),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Basic view — accuracy and response-time trends are visible '
+              'to linked clinical staff only.',
+              style: Monad.monoBodySm,
+            ),
+          ),
+        ]),
       );
     }
     final acc = trends
@@ -662,8 +666,11 @@ class _CaregiverDashboardScreenState extends State<CaregiverDashboardScreen> {
               ...schedules.map((s) {
                 final typeColor =
                     Monad.reminderColor(s.reminderType.name);
+                // Fixed type mapping: medicine = lakeBlue, water = skyBlue,
+                // food = gold, exercise = mint (tinted surfaces + icon +
+                // label together).
                 final tint = s.reminderType == ReminderType.medicine
-                    ? Monad.tintSky
+                    ? Color.lerp(Monad.parchment, Monad.lakeBlue, 0.12)!
                     : s.reminderType == ReminderType.water
                         ? Monad.tintSky
                         : s.reminderType == ReminderType.food

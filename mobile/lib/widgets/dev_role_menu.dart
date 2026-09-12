@@ -10,6 +10,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../services/auth_session.dart';
+import '../theme/monad_theme.dart';
 
 class DevRoleMenu extends StatelessWidget {
   static const enabled = bool.fromEnvironment('DEV_MENU');
@@ -25,19 +26,29 @@ class DevRoleMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!enabled) return const SizedBox.shrink();
-    return Drawer(
+    return const Drawer(
+      backgroundColor: Monad.parchment,
       child: SafeArea(
-        child: ListView(
+        child: _DevRoleList(),
+      ),
+    );
+  }
+}
+
+class _DevRoleList extends StatelessWidget {
+  const _DevRoleList();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Text('DEV — view as',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('DEV — VIEW AS', style: Monad.monoBodySm),
             const SizedBox(height: 8),
-            for (final (label, phone) in _accounts)
+            for (final (label, phone) in DevRoleMenu._accounts)
               ListTile(
-                title: Text(label),
-                subtitle: Text(phone,
-                    style: const TextStyle(fontFamily: 'monospace')),
+                title: Text(label, style: Monad.monoBody),
+                subtitle: Text(phone, style: Monad.monoCaption),
                 onTap: () async {
                   Navigator.of(context).pop();
                   await AuthSession.instance.logout();
@@ -46,8 +57,6 @@ class DevRoleMenu extends StatelessWidget {
                 },
               ),
           ],
-        ),
-      ),
-    );
+        );
   }
 }

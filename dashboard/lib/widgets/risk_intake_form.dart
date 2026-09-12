@@ -7,8 +7,9 @@ library;
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../config.dart';
 import '../theme/monad_theme.dart';
-import '../../main.dart' show _baseUrl;
+import 'monad/monad_pill_button.dart';
 
 class RiskIntakeForm extends StatefulWidget {
   final String patientId;
@@ -129,7 +130,7 @@ class _RiskIntakeFormState extends State<RiskIntakeForm> {
     try {
       final payload = _buildPayload();
       final res = await http.post(
-        Uri.parse('$_baseUrl/api/v1/patients/${widget.patientId}/risk-screening'),
+        Uri.parse('$apiBaseUrl/api/v1/patients/${widget.patientId}/risk-screening'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(payload),
       );
@@ -160,8 +161,8 @@ class _RiskIntakeFormState extends State<RiskIntakeForm> {
 
   @override
   Widget build(BuildContext context) {
-    const section = TextStyle(fontFamily: Monad.monoFamily, fontSize: 11,
-        letterSpacing: 1.2, color: Monad.smoke, fontWeight: FontWeight.w600);
+    const section = TextStyle(fontFamily: Monad.monoFamily, fontSize: 12,
+        letterSpacing: -0.4, color: Monad.smoke, fontWeight: FontWeight.w500);
 
     return Dialog(
       child: Container(
@@ -255,11 +256,10 @@ class _RiskIntakeFormState extends State<RiskIntakeForm> {
             Row(mainAxisAlignment: MainAxisAlignment.end, children: [
               TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
               const SizedBox(width: 8),
-              FilledButton(
-                onPressed: _loading ? null : _submit,
-                child: _loading
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Run Screening'),
+              MonadPillButton(
+                label: 'Run Screening',
+                onPressed: _submit,
+                busy: _loading,
               ),
             ]),
           ],

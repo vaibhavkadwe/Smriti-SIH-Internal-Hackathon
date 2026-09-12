@@ -101,14 +101,35 @@ class CulturalArtPainter extends CustomPainter {
         canvas.drawCircle(Offset(cx + 12 * cos(a), cy + 12 * sin(a)), 2, Paint()..color = teaGreen..style = PaintingStyle.fill);
       }
     } else if (key == 'chapchar_kut' || key == 'losar') {
-      // Mountain / hill arc (Mizo / Arunachal festivals)
+      // Mountain / hill arc (Mizo / Arunachal festivals) — kept
       canvas.drawArc(Rect.fromLTWH(cx - 14, cy - 8, 28, 16), 0.1 * 3.14, 2.8 * 3.14, false, p);
+    } else if (key == 'sangken') {
+      // Water splash arc (Sangken water festival)
+      canvas.drawArc(Rect.fromLTWH(cx - 14, cy - 9, 28, 18), 0.0, 1.0 * 3.14, false, Paint()..color = Color(0xFF4A8DB7)..style = PaintingStyle.fill);
+    } else if (key == 'wangala') {
+      // Drum rhythm (Wangala 100 drums) — kept
+      canvas.drawCircle(Offset(cx, cy), 11, Paint()..color = eriGold..style = PaintingStyle.fill);
+      canvas.drawCircle(Offset(cx, cy), 5, Paint()..color = terracotta..style = PaintingStyle.fill);
+    } else if (key == 'moatsu') {
+      // Flower/wreath arc (Ao Moatsu festival)
+      canvas.drawArc(Rect.fromLTWH(cx - 13, cy - 7, 26, 14), 0.2 * 3.14, 2.4 * 3.14, false, Paint()..color = Color(0xFFC0704A)..style = PaintingStyle.fill);
+    } else if (key == 'dree') {
+      // Circular offering (Dree, Arunachal)
+      canvas.drawCircle(Offset(cx, cy), 10, Paint()..color = Color(0xFF2D5A27)..style = PaintingStyle.fill);
+    } else if (key == 'ningol_chakouba') {
+      // Bond / thread loop (Manipur Ningol Chakouba)
+      canvas.drawOval(Rect.fromLTWH(cx - 9, cy - 8, 18, 16), p);
+    } else if (key == 'kaji_nemu') {
+      // Lemon crescent (Assam kaji nemu)
+      canvas.drawArc(Rect.fromLTWH(cx - 11, cy - 9, 22, 18), 0.6 * 3.14, 2.6 * 3.14, false, p);
     } else if (key == 'nongkrem' || key == 'wangala') {
       // Drum / circular rhythm (Nongkrem dance / Wangala 100 drums)
       canvas.drawCircle(Offset(cx, cy), 11, Paint()..color = eriGold..style = PaintingStyle.fill);
       canvas.drawCircle(Offset(cx, cy), 5, Paint()..color = terracotta..style = PaintingStyle.fill);
     } else {
-      // Generic star / flower fallback
+      // Mountain / hill arc backdrop (Mizo / Arunachal festivals) with the
+      // generic star / flower fallback painted over it.
+      canvas.drawArc(Rect.fromLTWH(cx - 14, cy - 8, 28, 16), 0.1 * 3.14, 2.8 * 3.14, false, p);
       final pts = [Offset(cx, cy - 10), Offset(cx + 6, cy - 2), Offset(cx + 10, cy + 4), Offset(cx + 2, cy + 8), Offset(cx - 6, cy + 2)];
       final path = Path()..moveTo(pts[0].dx, pts[0].dy); for (var i = 1; i < pts.length; i++) path.lineTo(pts[i].dx, pts[i].dy); path.close();
       canvas.drawPath(path, p);
